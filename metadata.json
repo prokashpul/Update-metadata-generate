@@ -1,0 +1,5 @@
+{
+  "name": "Microstock MetaGen",
+  "description": "AI-powered metadata generator for microstock contributors. Generate titles and keywords for your images using Google Gemini.",
+  "requestFramePermissions": []
+}
