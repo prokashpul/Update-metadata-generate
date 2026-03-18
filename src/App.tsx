@@ -21,13 +21,21 @@ import {
   Monitor,
   Loader2,
   MessageSquare,
+  Calendar,
   Edit3,
   Eraser,
   FileText,
   FileArchive,
   FileSpreadsheet,
   Menu,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  MapPin,
+  Info,
+  Home
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI } from "@google/genai";
@@ -46,6 +54,382 @@ interface FileData {
   customFilename?: string;
   type: 'image' | 'vector' | 'video';
 }
+
+const GLOBAL_CALENDAR_DATA = [
+  {
+    month: "January",
+    badge: "NEW YEAR & HEALTH",
+    keyDates: [
+      { date: "Jan 01", event: "New Year's Day" },
+      { date: "Jan 20", event: "Martin Luther King Jr. Day" },
+      { date: "Jan 29", event: "Lunar New Year (Year of the Snake)" }
+    ],
+    submitNow: ["Easter Sunday", "Earth Day", "Mother's Day", "Spring Outdoors"],
+    keywords: ["fitness", "resolutions", "detox", "healthy eating", "organization", "spring flowers", "gardening"]
+  },
+  {
+    month: "February",
+    badge: "LOVE & INCLUSION",
+    keyDates: [
+      { date: "Feb 01", event: "Black History Month Begins" },
+      { date: "Feb 14", event: "Valentine's Day" },
+      { date: "Feb 17", event: "Presidents' Day (USA)" }
+    ],
+    submitNow: ["Pride Month", "Father's Day", "Graduation Season", "Summer Vacation"],
+    keywords: ["romance", "gift", "heart", "civil rights", "equality", "beach", "summer fashion", "travel"]
+  },
+  {
+    month: "March",
+    badge: "RENEWAL & NATURE",
+    keyDates: [
+      { date: "Mar 08", event: "Intl. Women's Day" },
+      { date: "Mar 17", event: "St. Patrick's Day" },
+      { date: "Mar 20", event: "Spring Equinox" },
+      { date: "Mar 31", event: "Ramadan Begins (Approx)" }
+    ],
+    submitNow: ["4th of July", "Back to School (USA)", "Summer Festivals"],
+    keywords: ["empowerment", "clover", "greenery", "fresh start", "outdoor activities", "hiking", "picnic"]
+  },
+  {
+    month: "April",
+    badge: "ENVIRONMENT & FAITH",
+    keyDates: [
+      { date: "Apr 15", event: "Tax Day (USA)" },
+      { date: "Apr 20", event: "Easter Sunday" },
+      { date: "Apr 22", event: "Earth Day" }
+    ],
+    submitNow: ["Autumn / Fall Foliage", "Halloween", "Winter Prep"],
+    keywords: ["recycling", "sustainability", "bunny", "eggs", "finance", "accounting", "growth", "savings"]
+  },
+  {
+    month: "May",
+    badge: "FAMILY & CELEBRATION",
+    keyDates: [
+      { date: "May 05", event: "Cinco de Mayo" },
+      { date: "May 11", event: "Mother's Day" },
+      { date: "May 26", event: "Memorial Day" }
+    ],
+    submitNow: ["Black Friday", "Cyber Monday", "Thanksgiving", "Christmas Early Bird"],
+    keywords: ["moms", "family brunch", "patriotism", "shopping", "holiday planning", "gift guide", "winter fashion"]
+  },
+  {
+    month: "June",
+    badge: "OUTDOORS & FREEDOM",
+    keyDates: [
+      { date: "Jun 08", event: "World Oceans Day" },
+      { date: "Jun 15", event: "Father's Day" },
+      { date: "Jun 19", event: "Juneteenth" },
+      { date: "Jun 21", event: "Summer Solstice" }
+    ],
+    submitNow: ["Christmas Peak", "Hanukkah", "New Year's Eve 2026"],
+    keywords: ["dads", "grilling", "beach cleanup", "diversity", "pride", "sunshine", "camping", "barbecue"]
+  },
+  {
+    month: "July",
+    badge: "PEAK SUMMER",
+    keyDates: [
+      { date: "Jul 01", event: "Canada Day" },
+      { date: "Jul 04", event: "Independence Day (USA)" },
+      { date: "Jul 17", event: "World Emoji Day" }
+    ],
+    submitNow: ["Valentine's Day 2026", "Super Bowl 2026", "Winter Sports"],
+    keywords: ["fireworks", "picnic", "national pride", "digital communication", "travel", "vacation rental"]
+  },
+  {
+    month: "August",
+    badge: "EDUCATION & YOUTH",
+    keyDates: [
+      { date: "Aug 01", event: "Back to School Peak" },
+      { date: "Aug 12", event: "International Youth Day" },
+      { date: "Aug 19", event: "World Photography Day" }
+    ],
+    submitNow: ["Easter 2026", "Spring Break 2026", "Corporate Tax Season"],
+    keywords: ["students", "learning", "classroom", "youth culture", "creativity", "spring prep", "office"]
+  },
+  {
+    month: "September",
+    badge: "PROFESSIONAL FALL",
+    keyDates: [
+      { date: "Sep 01", event: "Labor Day" },
+      { date: "Sep 21", event: "International Day of Peace" },
+      { date: "Sep 22", event: "Fall Equinox" }
+    ],
+    submitNow: ["Mother's Day 2026", "Summer 2026 Vacation"],
+    keywords: ["autumn leaves", "cozy", "business strategy", "meeting", "peace", "harvest", "sweater weather"]
+  },
+  {
+    month: "October",
+    badge: "CELEBRATION & COLOR",
+    keyDates: [
+      { date: "Oct 13", event: "Indigenous Peoples' Day" },
+      { date: "Oct 24", event: "United Nations Day" },
+      { date: "Oct 31", event: "Halloween" }
+    ],
+    submitNow: ["Graduation 2026", "Father's Day 2026"],
+    keywords: ["pumpkin", "costume", "spooky", "fall harvest", "global unity", "thanksgiving prep"]
+  },
+  {
+    month: "November",
+    badge: "GRATITUDE & RETAIL",
+    keyDates: [
+      { date: "Nov 11", event: "Veterans Day" },
+      { date: "Nov 27", event: "Thanksgiving (USA)" },
+      { date: "Nov 28", event: "Black Friday" }
+    ],
+    submitNow: ["Back to School 2026", "Independence Day July"],
+    keywords: ["ecommerce", "shopping", "discount", "family dinner", "gratitude", "turkey", "winter coats"]
+  },
+  {
+    month: "December",
+    badge: "HOLIDAY MAGIC",
+    keyDates: [
+      { date: "Dec 24", event: "Christmas Eve" },
+      { date: "Dec 25", event: "Christmas Day" },
+      { date: "Dec 31", event: "New Year's Eve" }
+    ],
+    submitNow: ["Easter 2026 Peak", "Spring Fashion 2026"],
+    keywords: ["gifts", "snow", "celebration", "fireworks", "resolutions", "party", "winter solstice"]
+  }
+];
+
+const INDIA_CALENDAR_DATA = [
+  {
+    month: "January",
+    badge: "FESTIVALS & HARVEST",
+    keyDates: [
+      { date: "Jan 14", event: "Makar Sankranti / Pongal" },
+      { date: "Jan 26", event: "Republic Day" }
+    ],
+    submitNow: ["Holi", "Baisakhi", "Summer Weddings"],
+    keywords: ["rangoli", "harvest", "kite flying", "tricolor", "traditional wear", "indian flag"]
+  },
+  {
+    month: "February",
+    badge: "DEVOTION & SPRING",
+    keyDates: [
+      { date: "Feb 01", event: "Vasant Panchami" },
+      { date: "Feb 15", event: "Maha Shivratri" }
+    ],
+    submitNow: ["Rama Navami", "Eid-ul-Fitr", "Monsoon Prep"],
+    keywords: ["yellow", "saraswati puja", "shiva", "temple", "spring blossoms", "devotion"]
+  },
+  {
+    month: "March",
+    badge: "COLORS & CELEBRATION",
+    keyDates: [
+      { date: "Mar 03", event: "Holi" },
+      { date: "Mar 20", event: "Eid-ul-Fitr" },
+      { date: "Mar 28", event: "Rama Navami" }
+    ],
+    submitNow: ["Independence Day", "Raksha Bandhan"],
+    keywords: ["gulal", "pichkari", "sweets", "mosque", "prayer", "ramadan", "indian culture"]
+  },
+  {
+    month: "April",
+    badge: "NEW YEAR & HARVEST",
+    keyDates: [
+      { date: "Apr 14", event: "Ambedkar Jayanti / Baisakhi" },
+      { date: "Apr 15", event: "Vishu / Poila Baisakh" }
+    ],
+    submitNow: ["Ganesh Chaturthi", "Onam"],
+    keywords: ["punjabi culture", "bhangra", "harvest", "bengali new year", "traditional food"]
+  },
+  {
+    month: "May",
+    badge: "SUMMER & SPIRITUALITY",
+    keyDates: [
+      { date: "May 01", event: "Buddha Purnima" }
+    ],
+    submitNow: ["Dussehra", "Durga Puja"],
+    keywords: ["meditation", "peace", "summer heat", "mangoes", "vacation", "indian summer"]
+  },
+  {
+    month: "June",
+    badge: "MONSOON & CHARIOTS",
+    keyDates: [
+      { date: "Jun 15", event: "Rath Yatra" }
+    ],
+    submitNow: ["Diwali", "Bhai Dooj"],
+    keywords: ["rain", "umbrella", "puri rath yatra", "lord jagannath", "clouds", "monsoon india"]
+  },
+  {
+    month: "July",
+    badge: "TEACHERS & TRADITION",
+    keyDates: [
+      { date: "Jul 29", event: "Guru Purnima" }
+    ],
+    submitNow: ["Chhath Puja", "Winter Weddings"],
+    keywords: ["guru", "respect", "spiritual", "monsoon greenery", "indian tradition"]
+  },
+  {
+    month: "August",
+    badge: "FREEDOM & BONDS",
+    keyDates: [
+      { date: "Aug 15", event: "Independence Day" },
+      { date: "Aug 27", event: "Raksha Bandhan" }
+    ],
+    submitNow: ["New Year 2027", "Makar Sankranti 2027"],
+    keywords: ["flag", "patriotism", "rakhi", "brother sister", "gifts", "sweets", "indian pride"]
+  },
+  {
+    month: "September",
+    badge: "DEVOTION & CULTURE",
+    keyDates: [
+      { date: "Sep 04", event: "Janmashtami" },
+      { date: "Sep 14", event: "Ganesh Chaturthi" },
+      { date: "Sep 22", event: "Onam" }
+    ],
+    submitNow: ["Republic Day 2027"],
+    keywords: ["krishna", "dahi handi", "ganpati", "modak", "boat race", "pookalam", "festival"]
+  },
+  {
+    month: "October",
+    badge: "VICTORY & HERITAGE",
+    keyDates: [
+      { date: "Oct 02", event: "Gandhi Jayanti" },
+      { date: "Oct 11", event: "Durga Puja Begins" },
+      { date: "Oct 20", event: "Dussehra" }
+    ],
+    submitNow: ["Holi 2027"],
+    keywords: ["non-violence", "khadi", "pandal", "goddess durga", "ravana dahan", "celebration"]
+  },
+  {
+    month: "November",
+    badge: "LIGHTS & GRATITUDE",
+    keyDates: [
+      { date: "Nov 08", event: "Diwali" },
+      { date: "Nov 10", event: "Bhai Dooj" },
+      { date: "Nov 16", event: "Chhath Puja" }
+    ],
+    submitNow: ["Summer 2027"],
+    keywords: ["diyas", "crackers", "lights", "family gathering", "sun worship", "deepavali"]
+  },
+  {
+    month: "December",
+    badge: "WINTER & FAITH",
+    keyDates: [
+      { date: "Dec 25", event: "Christmas" }
+    ],
+    submitNow: ["Monsoon 2027"],
+    keywords: ["cake", "party", "winter chill", "travel", "year end", "indian winter"]
+  }
+];
+
+const ContentCalendar = ({ isDarkMode }: { isDarkMode: boolean }) => {
+  const [region, setRegion] = useState<'Global' | 'India'>('Global');
+  const currentData = region === 'Global' ? GLOBAL_CALENDAR_DATA : INDIA_CALENDAR_DATA;
+
+  return (
+    <div className="space-y-12 pb-20">
+      {/* Header */}
+      <div className="text-center space-y-4">
+        <h2 className="text-xl md:text-2xl font-medium text-gray-400 max-w-2xl mx-auto leading-relaxed">
+          Plan your shoots 3-4 months ahead. Stock buyers search for seasonal content long before the event occurs.
+        </h2>
+        
+        <div className={`inline-flex p-1 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'}`}>
+          <button 
+            onClick={() => setRegion('Global')}
+            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${region === 'Global' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-400'}`}
+          >
+            <Globe size={16} /> Global
+          </button>
+          <button 
+            onClick={() => setRegion('India')}
+            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${region === 'India' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-400'}`}
+          >
+            <MapPin size={16} /> India
+          </button>
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {currentData.map((item) => (
+          <motion.div 
+            key={item.month}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`rounded-[32px] p-8 border transition-all hover:scale-[1.02] ${isDarkMode ? 'bg-[#0a0a0a] border-white/10' : 'bg-white border-black/5 shadow-sm'}`}
+          >
+            <div className="flex justify-between items-start mb-8">
+              <h3 className="text-2xl font-bold tracking-tight">{item.month}</h3>
+              <span className="text-[10px] font-bold tracking-widest text-indigo-400 bg-indigo-400/10 px-3 py-1 rounded-full uppercase">
+                {item.badge}
+              </span>
+            </div>
+
+            <div className="space-y-8">
+              {/* Key Dates */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                  <Calendar size={12} /> Key Dates
+                </div>
+                <div className="space-y-3">
+                  {item.keyDates.map((kd, idx) => (
+                    <div key={idx} className="flex items-center gap-3 group">
+                      <span className="text-[10px] font-bold text-indigo-400 bg-indigo-400/10 px-2 py-1 rounded-md min-w-[50px] text-center">
+                        {kd.date}
+                      </span>
+                      <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {kd.event}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Submit Now */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                  <Sparkles size={12} /> Submit Now For:
+                </div>
+                <ul className="space-y-2">
+                  {item.submitNow.map((sn, idx) => (
+                    <li key={idx} className="flex items-center gap-2 text-sm font-medium text-gray-400">
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/40" />
+                      {sn}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Keywords */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                  <ImageIcon size={12} /> High-Volume Keywords
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {item.keywords.map((kw, idx) => (
+                    <span key={idx} className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${isDarkMode ? 'bg-white/5 border-white/10 text-gray-400' : 'bg-gray-50 border-black/5 text-gray-500'}`}>
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Footer Info Box */}
+      <div className={`max-w-3xl mx-auto p-8 rounded-[32px] border flex gap-6 items-start ${isDarkMode ? 'bg-[#0a0a0a] border-white/10' : 'bg-white border-black/5 shadow-sm'}`}>
+        <div className="p-3 bg-indigo-500/20 rounded-2xl text-indigo-400">
+          <Info size={24} />
+        </div>
+        <div className="space-y-4">
+          <h4 className="text-xl font-bold tracking-tight">The Golden Rule of Stock Timing</h4>
+          <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            Agencies like <span className="font-bold text-indigo-400">Adobe Stock</span> and <span className="font-bold text-indigo-400">Shutterstock</span> take 1-2 weeks to review content, and another 2 weeks for search engines to index your keywords.
+          </p>
+          <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            To catch the "Peak Buyer Cycle", aim to have your files online exactly <span className="font-bold text-indigo-400 underline underline-offset-4">100 days before</span> the event. This gives your content time to gain popularity points before buyers start downloading.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function App() {
   const [files, setFiles] = useState<FileData[]>([]);
@@ -81,6 +465,7 @@ export default function App() {
   const [bulkKeywords, setBulkKeywords] = useState('');
   const [bulkEditMode, setBulkEditMode] = useState<'append' | 'replace'>('append');
   const [showSidebar, setShowSidebar] = useState(false);
+  const [view, setView] = useState<'main' | 'calendar'>('main');
 
   // Load API key from localStorage on mount
   useEffect(() => {
@@ -638,8 +1023,11 @@ export default function App() {
       `}>
         <div className="p-6 space-y-8">
           <div className="flex items-center justify-between md:hidden mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+            <div 
+              onClick={() => setView('main')}
+              className="flex items-center gap-2 cursor-pointer group"
+            >
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
                 <Sparkles className="text-white w-5 h-5" />
               </div>
               <span className="text-xl font-bold tracking-tight">MetaGen</span>
@@ -658,6 +1046,26 @@ export default function App() {
             <button onClick={() => setIsDarkMode(true)} className={`flex-1 py-2 rounded-lg flex justify-center ${isDarkMode ? 'bg-[#1a1a1a] shadow-sm' : 'text-gray-500'}`}><Moon size={18} /></button>
           </div>
 
+          {/* Home Page Card */}
+          <div 
+            onClick={() => {
+              setView('main');
+              setShowSidebar(false);
+            }} 
+            className={`p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] ${view === 'main' ? 'bg-indigo-600/10 border-indigo-500/50' : isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-gray-50 border-black/5 hover:bg-gray-100'}`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400"><Home size={20} /></div>
+                <div>
+                  <p className="font-bold text-sm">Home Page</p>
+                  <p className="text-[10px] text-gray-500">Back to Metadata Generator</p>
+                </div>
+              </div>
+              <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-gray-500">→</div>
+            </div>
+          </div>
+
           {/* AI Config Card */}
           <div onClick={() => setShowSettings(true)} className={`p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] ${isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-gray-50 border-black/5 hover:bg-gray-100'}`}>
             <div className="flex items-center justify-between">
@@ -672,22 +1080,25 @@ export default function App() {
             </div>
           </div>
 
-          {/* Feedback Card */}
-          <a 
-            href="mailto:pprokash102@gmail.com?subject=MetaGen Feedback"
-            className={`p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] block ${isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-gray-50 border-black/5 hover:bg-gray-100'}`}
+          {/* Content Calendar Card */}
+          <div 
+            onClick={() => {
+              setView('calendar');
+              setShowSidebar(false);
+            }}
+            className={`p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] ${view === 'calendar' ? 'bg-indigo-600/10 border-indigo-500/50' : isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-gray-50 border-black/5 hover:bg-gray-100'}`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400"><MessageSquare size={20} /></div>
+                <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400"><Calendar size={20} /></div>
                 <div>
-                  <p className="font-bold text-sm">Feedback</p>
-                  <p className="text-[10px] text-gray-500">Bugs & Ideas</p>
+                  <p className="font-bold text-sm">Content Calendar</p>
+                  <p className="text-[10px] text-gray-500">Plan Your Uploads</p>
                 </div>
               </div>
               <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-gray-500">→</div>
             </div>
-          </a>
+          </div>
 
           {/* Target Platform */}
           <div className="space-y-4">
@@ -837,7 +1248,13 @@ export default function App() {
                 >
                   <Menu size={20} />
                 </button>
-                <div className="flex items-center gap-2">
+                <div 
+                  onClick={() => {
+                    setView('main');
+                    setShowSidebar(false);
+                  }}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
                   <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                     <Sparkles className="text-white w-5 h-5" />
                   </div>
@@ -855,6 +1272,8 @@ export default function App() {
         </nav>
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-12">
+        {view === 'main' ? (
+          <>
         {/* Hero / Upload Section */}
         <section className="mb-12 text-center">
           <motion.h1 
@@ -1243,6 +1662,10 @@ export default function App() {
             <ImageIcon size={64} className="mb-4 text-indigo-500" />
             <p className="text-xl font-medium">No images uploaded yet</p>
           </div>
+        )}
+        </>
+        ) : (
+          <ContentCalendar isDarkMode={isDarkMode} />
         )}
       </main>
 
