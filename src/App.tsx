@@ -1405,30 +1405,6 @@ export default function App() {
               </button>
 
               <button 
-                onClick={exportToCSV}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${
-                  isDarkMode 
-                    ? 'bg-indigo-950/30 border-indigo-500/30 text-indigo-400 hover:bg-indigo-900/40' 
-                    : 'bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100'
-                }`}
-              >
-                <FileSpreadsheet size={16} />
-                Meta CSV
-              </button>
-
-              <button 
-                onClick={exportToTXT}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${
-                  isDarkMode 
-                    ? 'bg-purple-950/30 border-purple-500/30 text-purple-400 hover:bg-purple-900/40' 
-                    : 'bg-purple-50 border-purple-200 text-purple-600 hover:bg-purple-100'
-                }`}
-              >
-                <FileText size={16} />
-                Meta TXT
-              </button>
-
-              <button 
                 onClick={exportToZIP}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${
                   isDarkMode 
