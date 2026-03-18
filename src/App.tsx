@@ -1101,110 +1101,118 @@ export default function App() {
           </div>
 
           {/* Target Platform */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
-              <Sparkles size={12} /> Target Platform
+          {appMode === 'META' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                <Sparkles size={12} /> Target Platform
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {['Adobe Stock', 'Shutterstock', 'Freepik', 'Pond5', 'Vecteezy', 'Generic CSV'].map(p => (
+                  <button 
+                    key={p}
+                    onClick={() => setTargetPlatform(p)}
+                    className={`py-2 px-3 rounded-xl text-[11px] font-bold transition-all ${targetPlatform === p ? 'bg-indigo-600 text-white' : isDarkMode ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {['Adobe Stock', 'Shutterstock', 'Freepik', 'Pond5', 'Vecteezy', 'Generic CSV'].map(p => (
-                <button 
-                  key={p}
-                  onClick={() => setTargetPlatform(p)}
-                  className={`py-2 px-3 rounded-xl text-[11px] font-bold transition-all ${targetPlatform === p ? 'bg-indigo-600 text-white' : isDarkMode ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* File Extension */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
-              <ImageIcon size={12} /> File Extension Name
+          {appMode === 'META' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                <ImageIcon size={12} /> File Extension Name
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {['Default', 'JPG', 'JPEG', 'PNG', 'EPS', 'AI', 'MP4', 'SVG'].map(e => (
+                  <button 
+                    key={e}
+                    onClick={() => setFileExtension(e)}
+                    className={`py-2 rounded-xl text-[10px] font-bold transition-all ${fileExtension === e ? 'bg-indigo-600 text-white' : isDarkMode ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-4 gap-2">
-              {['Default', 'JPG', 'JPEG', 'PNG', 'EPS', 'AI', 'MP4', 'SVG'].map(e => (
-                <button 
-                  key={e}
-                  onClick={() => setFileExtension(e)}
-                  className={`py-2 rounded-xl text-[10px] font-bold transition-all ${fileExtension === e ? 'bg-indigo-600 text-white' : isDarkMode ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* Metadata Optimization */}
-          <div className="space-y-6">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Metadata Optimization</div>
-            
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-gray-500 uppercase">Image Type</label>
-              <select 
-                value={imageType}
-                onChange={(e) => setImageType(e.target.value)}
-                className={`w-full p-3 rounded-xl text-xs font-medium outline-none border ${isDarkMode ? 'bg-black/40 border-white/10' : 'bg-gray-50 border-black/5'}`}
-              >
-                <option>None / Auto-detect</option>
-                <option>Photo</option>
-                <option>Illustration</option>
-                <option>Vector</option>
-              </select>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold text-gray-500 uppercase">Tags Count</label>
-                <span className="text-xs font-bold text-indigo-400">{tagsCount}</span>
+          {appMode === 'META' && (
+            <div className="space-y-6">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Metadata Optimization</div>
+              
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase">Image Type</label>
+                <select 
+                  value={imageType}
+                  onChange={(e) => setImageType(e.target.value)}
+                  className={`w-full p-3 rounded-xl text-xs font-medium outline-none border ${isDarkMode ? 'bg-black/40 border-white/10' : 'bg-gray-50 border-black/5'}`}
+                >
+                  <option>None / Auto-detect</option>
+                  <option>Photo</option>
+                  <option>Illustration</option>
+                  <option>Vector</option>
+                </select>
               </div>
-              <input type="range" min="5" max="50" value={tagsCount} onChange={(e) => setTagsCount(parseInt(e.target.value))} className="w-full accent-indigo-600" />
-            </div>
 
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold text-gray-500 uppercase">Title Length</label>
-                <span className="text-xs font-bold text-indigo-400">{titleLength}</span>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Tags Count</label>
+                  <span className="text-xs font-bold text-indigo-400">{tagsCount}</span>
+                </div>
+                <input type="range" min="5" max="50" value={tagsCount} onChange={(e) => setTagsCount(parseInt(e.target.value))} className="w-full accent-indigo-600" />
               </div>
-              <input type="range" min="10" max="199" value={titleLength} onChange={(e) => setTitleLength(parseInt(e.target.value))} className="w-full accent-indigo-600" />
-            </div>
 
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold text-gray-500 uppercase">Description Length</label>
-                <span className="text-xs font-bold text-indigo-400">{descriptionLength}</span>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Title Length</label>
+                  <span className="text-xs font-bold text-indigo-400">{titleLength}</span>
+                </div>
+                <input type="range" min="10" max="199" value={titleLength} onChange={(e) => setTitleLength(parseInt(e.target.value))} className="w-full accent-indigo-600" />
               </div>
-              <input type="range" min="50" max="500" value={descriptionLength} onChange={(e) => setDescriptionLength(parseInt(e.target.value))} className="w-full accent-indigo-600" />
-            </div>
 
-            <div className={`flex items-center justify-between p-4 rounded-2xl border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-black/5'}`}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400 font-bold text-xs">T</div>
-                <span className="text-sm font-bold">Single-Word Tags</span>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Description Length</label>
+                  <span className="text-xs font-bold text-indigo-400">{descriptionLength}</span>
+                </div>
+                <input type="range" min="50" max="500" value={descriptionLength} onChange={(e) => setDescriptionLength(parseInt(e.target.value))} className="w-full accent-indigo-600" />
               </div>
-              <button 
-                onClick={() => setSingleWordTags(!singleWordTags)}
-                className={`w-12 h-6 rounded-full relative transition-colors ${singleWordTags ? 'bg-indigo-600' : 'bg-gray-600'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${singleWordTags ? 'left-7' : 'left-1'}`} />
-              </button>
+
+              <div className={`flex items-center justify-between p-4 rounded-2xl border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-black/5'}`}>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400 font-bold text-xs">T</div>
+                  <span className="text-sm font-bold">Single-Word Tags</span>
+                </div>
+                <button 
+                  onClick={() => setSingleWordTags(!singleWordTags)}
+                  className={`w-12 h-6 rounded-full relative transition-colors ${singleWordTags ? 'bg-indigo-600' : 'bg-gray-600'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${singleWordTags ? 'left-7' : 'left-1'}`} />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Auto Download CSV */}
-          <div className={`flex items-center justify-between p-4 rounded-2xl border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-black/5'}`}>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-500/10 rounded-lg text-gray-400"><Download size={16} /></div>
-              <span className="text-sm font-bold">Auto Download CSV</span>
+          {appMode === 'META' && (
+            <div className={`flex items-center justify-between p-4 rounded-2xl border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-black/5'}`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gray-500/10 rounded-lg text-gray-400"><Download size={16} /></div>
+                <span className="text-sm font-bold">Auto Download CSV</span>
+              </div>
+              <button 
+                onClick={() => setAutoDownloadCsv(!autoDownloadCsv)}
+                className={`w-12 h-6 rounded-full relative transition-colors ${autoDownloadCsv ? 'bg-indigo-600' : 'bg-gray-600'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${autoDownloadCsv ? 'left-7' : 'left-1'}`} />
+              </button>
             </div>
-            <button 
-              onClick={() => setAutoDownloadCsv(!autoDownloadCsv)}
-              className={`w-12 h-6 rounded-full relative transition-colors ${autoDownloadCsv ? 'bg-indigo-600' : 'bg-gray-600'}`}
-            >
-              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${autoDownloadCsv ? 'left-7' : 'left-1'}`} />
-            </button>
-          </div>
+          )}
 
           {/* Meta / Prompt Selector */}
           <div className={`flex p-1 rounded-xl ${isDarkMode ? 'bg-black/40' : 'bg-gray-100'}`}>
@@ -1281,7 +1289,11 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl sm:text-6xl font-extrabold mb-6 tracking-tight"
           >
-            Generate Microstock <span className="text-indigo-500">Metadata</span>
+            {appMode === 'META' ? (
+              <>Generate Microstock <span className="text-indigo-500">Metadata</span></>
+            ) : (
+              <>Generate AI <span className="text-indigo-500">Prompts</span></>
+            )}
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -1289,7 +1301,11 @@ export default function App() {
             transition={{ delay: 0.1 }}
             className={`text-lg mb-10 max-w-2xl mx-auto ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}
           >
-            Upload your images and let AI generate optimized titles and keywords for Adobe Stock, Shutterstock, and more.
+            {appMode === 'META' ? (
+              "Upload your images and let AI generate optimized titles and keywords for Adobe Stock, Shutterstock, and more."
+            ) : (
+              "Upload your images and let AI generate detailed prompts to recreate them using Midjourney, DALL-E, or Stable Diffusion."
+            )}
           </motion.p>
 
           <motion.div 
@@ -1367,7 +1383,7 @@ export default function App() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              {selectedFileIds.length > 0 && (
+              {selectedFileIds.length > 0 && appMode === 'META' && (
                 <button 
                   onClick={() => setShowBulkEdit(true)}
                   className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-semibold transition-all shadow-lg shadow-emerald-500/25"
@@ -1377,7 +1393,7 @@ export default function App() {
                 </button>
               )}
 
-              {completedCount > 0 && (
+              {completedCount > 0 && appMode === 'META' && (
                 <button 
                   onClick={batchRenameByTitle}
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${
@@ -1404,17 +1420,19 @@ export default function App() {
                 Clean
               </button>
 
-              <button 
-                onClick={exportToZIP}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${
-                  isDarkMode 
-                    ? 'bg-orange-950/30 border-orange-500/30 text-orange-400 hover:bg-orange-900/40' 
-                    : 'bg-orange-50 border-orange-200 text-orange-600 hover:bg-orange-100'
-                }`}
-              >
-                <FileArchive size={16} />
-                Zip (Embedded)
-              </button>
+              {appMode === 'META' && (
+                <button 
+                  onClick={exportToZIP}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${
+                    isDarkMode 
+                      ? 'bg-orange-950/30 border-orange-500/30 text-orange-400 hover:bg-orange-900/40' 
+                      : 'bg-orange-50 border-orange-200 text-orange-600 hover:bg-orange-100'
+                  }`}
+                >
+                  <FileArchive size={16} />
+                  Zip (Embedded)
+                </button>
+              )}
 
               <button 
                 onClick={generateAll}
@@ -1524,34 +1542,34 @@ export default function App() {
                     )}
                   </div>
 
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                        {appMode === 'META' ? 'Title' : 'Prompt Name'}
-                      </label>
-                      <button 
-                        onClick={() => copyToClipboard(file.title)}
-                        className={`p-1 rounded hover:bg-indigo-500/10 transition-colors ${isDarkMode ? 'text-gray-500 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'}`}
-                      >
-                        <Copy size={14} />
-                      </button>
-                    </div>
-                    <textarea 
-                      value={file.title}
-                      onChange={(e) => setFiles(prev => prev.map(f => f.id === file.id ? { ...f, title: e.target.value } : f))}
-                      placeholder={appMode === 'META' ? "Waiting for generation..." : "AI Prompt Title..."}
-                      className={`w-full p-3 rounded-xl text-sm resize-none h-20 transition-all focus:ring-2 focus:ring-indigo-500/50 outline-none ${
-                        isDarkMode ? 'bg-black/40 border-white/5 text-white' : 'bg-gray-50 border-black/5 text-gray-900'
-                      }`}
-                    />
-                    {appMode === 'META' && (
+                  {appMode === 'META' && (
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                          Title
+                        </label>
+                        <button 
+                          onClick={() => copyToClipboard(file.title)}
+                          className={`p-1 rounded hover:bg-indigo-500/10 transition-colors ${isDarkMode ? 'text-gray-500 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'}`}
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </div>
+                      <textarea 
+                        value={file.title}
+                        onChange={(e) => setFiles(prev => prev.map(f => f.id === file.id ? { ...f, title: e.target.value } : f))}
+                        placeholder="Waiting for generation..."
+                        className={`w-full p-3 rounded-xl text-sm resize-none h-20 transition-all focus:ring-2 focus:ring-indigo-500/50 outline-none ${
+                          isDarkMode ? 'bg-black/40 border-white/5 text-white' : 'bg-gray-50 border-black/5 text-gray-900'
+                        }`}
+                      />
                       <div className="mt-1 flex justify-end">
                         <span className={`text-[10px] ${file.title.length > 199 ? 'text-red-500' : 'text-gray-500'}`}>
                           {file.title.length}/199
                         </span>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   <div>
                     <div className="flex justify-between items-center mb-2">
@@ -1575,27 +1593,29 @@ export default function App() {
                     />
                   </div>
 
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                        {appMode === 'META' ? 'Keywords' : 'Style Keywords'}
-                      </label>
-                      <button 
-                        onClick={() => copyToClipboard(file.keywords)}
-                        className={`p-1 rounded hover:bg-indigo-500/10 transition-colors ${isDarkMode ? 'text-gray-500 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'}`}
-                      >
-                        <Copy size={14} />
-                      </button>
+                  {appMode === 'META' && (
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                          Keywords
+                        </label>
+                        <button 
+                          onClick={() => copyToClipboard(file.keywords)}
+                          className={`p-1 rounded hover:bg-indigo-500/10 transition-colors ${isDarkMode ? 'text-gray-500 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'}`}
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </div>
+                      <textarea 
+                        value={file.keywords}
+                        onChange={(e) => setFiles(prev => prev.map(f => f.id === file.id ? { ...f, keywords: e.target.value } : f))}
+                        placeholder="Waiting for generation..."
+                        className={`w-full p-3 rounded-xl text-sm resize-none h-24 transition-all focus:ring-2 focus:ring-indigo-500/50 outline-none ${
+                          isDarkMode ? 'bg-black/40 border-white/5 text-white' : 'bg-gray-50 border-black/5 text-gray-900'
+                        }`}
+                      />
                     </div>
-                    <textarea 
-                      value={file.keywords}
-                      onChange={(e) => setFiles(prev => prev.map(f => f.id === file.id ? { ...f, keywords: e.target.value } : f))}
-                      placeholder={appMode === 'META' ? "Waiting for generation..." : "Style tags..."}
-                      className={`w-full p-3 rounded-xl text-sm resize-none h-24 transition-all focus:ring-2 focus:ring-indigo-500/50 outline-none ${
-                        isDarkMode ? 'bg-black/40 border-white/5 text-white' : 'bg-gray-50 border-black/5 text-gray-900'
-                      }`}
-                    />
-                  </div>
+                  )}
 
                   {file.status === 'error' && (
                     <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 text-red-400 text-xs">
@@ -1617,7 +1637,7 @@ export default function App() {
                       {file.status === 'generating' ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
                       {file.status === 'done' ? 'Regenerate' : 'Generate'}
                     </button>
-                    {file.status === 'done' && (
+                    {file.status === 'done' && appMode === 'META' && (
                       <button 
                         onClick={() => downloadIndividualCSV(file.id)}
                         className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
