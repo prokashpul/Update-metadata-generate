@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Component, ReactNode } from 'react';
 import { 
   Upload, 
   CloudUpload,
@@ -40,6 +40,87 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI } from "@google/genai";
 import JSZip from 'jszip';
+import { 
+  auth, 
+  db, 
+  googleProvider, 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  updateDoc,
+  increment,
+  onSnapshot,
+  User,
+  handleFirestoreError,
+  OperationType 
+} from './firebase';
+import { LogIn, LogOut, User as UserIcon, ShieldCheck } from 'lucide-react';
+
+class ErrorBoundary extends React.Component<any, any> {
+  public state: any;
+  public props: any;
+
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      let errorMessage = "Something went wrong.";
+      try {
+        const parsed = JSON.parse(this.state.error.message);
+        if (parsed.error && parsed.operationType) {
+          errorMessage = `Firestore Error (${parsed.operationType}): ${parsed.error}`;
+        }
+      } catch (e) {
+        errorMessage = this.state.error.message || String(this.state.error);
+      }
+
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white p-8">
+          <div className="max-w-md w-full bg-[#141414] border border-white/10 rounded-[32px] p-10 text-center space-y-6">
+            <div className="inline-flex p-4 bg-red-500/20 rounded-2xl text-red-500">
+              <AlertCircle size={40} />
+            </div>
+            <h2 className="text-2xl font-bold">Unexpected Error</h2>
+            <p className="text-gray-400 text-sm leading-relaxed">{errorMessage}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all"
+            >
+              Reload Application
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+interface UserProfile {
+  uid: string;
+  displayName: string | null;
+  email: string | null;
+  photoURL: string | null;
+  role: 'user' | 'admin';
+  createdAt: string;
+  lastLogin: string;
+  metadataCount?: number;
+}
 
 interface FileData {
   id: string;
@@ -451,11 +532,26 @@ const ContentCalendar = ({ isDarkMode }: { isDarkMode: boolean }) => {
 };
 
 export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  );
+}
+
+function AppContent() {
+  const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
   const [files, setFiles] = useState<FileData[]>([]);
   const [apiKey, setApiKey] = useState<string>('');
   const [showSettings, setShowSettings] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
+  const [localMetadataCount, setLocalMetadataCount] = useState<number>(0);
   const aiRef = useRef<any>(null);
 
   useEffect(() => {
@@ -492,14 +588,20 @@ export default function App() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [view, setView] = useState<'main' | 'calendar'>('main');
 
-  // Load API key from localStorage on mount
+  // Load API key and local count from localStorage on mount
   useEffect(() => {
     const savedKey = localStorage.getItem('gemini_api_key');
     const savedModel = localStorage.getItem('gemini_model');
+    const savedCount = localStorage.getItem('local_metadata_count');
+    
     if (savedKey) setApiKey(savedKey);
     if (savedModel) setSelectedModel(savedModel);
     else if (process.env.GEMINI_API_KEY) {
       setApiKey(process.env.GEMINI_API_KEY);
+    }
+    
+    if (savedCount) {
+      setLocalMetadataCount(parseInt(savedCount, 10));
     }
   }, []);
 
@@ -511,6 +613,116 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  // Firebase Auth Listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      setIsAuthLoading(false);
+      
+      if (currentUser) {
+        // Sync basic user info to Firestore on login
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        let userDoc;
+        try {
+          userDoc = await getDoc(userDocRef);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.GET, `users/${currentUser.uid}`);
+          return;
+        }
+        
+        const profileData = {
+          uid: currentUser.uid,
+          displayName: currentUser.displayName,
+          email: currentUser.email,
+          photoURL: currentUser.photoURL,
+          lastLogin: new Date().toISOString(),
+          role: (userDoc && userDoc.exists()) ? (userDoc.data().role || 'user') : 'user',
+          createdAt: (userDoc && userDoc.exists()) ? (userDoc.data().createdAt || new Date().toISOString()) : new Date().toISOString()
+        };
+
+        try {
+          await setDoc(userDocRef, profileData, { merge: true });
+          
+          // Sync local count to Firestore if local is higher
+          if (localMetadataCount > (userDoc?.data()?.metadataCount || 0)) {
+            await updateDoc(userDocRef, {
+              metadataCount: localMetadataCount
+            });
+          }
+        } catch (error) {
+          handleFirestoreError(error, OperationType.WRITE, `users/${currentUser.uid}`);
+        }
+      } else {
+        setUserProfile(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // User Profile Snapshot Listener
+  useEffect(() => {
+    if (!user) {
+      setUserProfile(null);
+      return;
+    }
+
+    const userDocRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userDocRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setUserProfile(snapshot.data() as UserProfile);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Sync local count with Firestore if Firestore is higher
+  useEffect(() => {
+    if (userProfile?.metadataCount && userProfile.metadataCount > localMetadataCount) {
+      setLocalMetadataCount(userProfile.metadataCount);
+      localStorage.setItem('local_metadata_count', userProfile.metadataCount.toString());
+    }
+  }, [userProfile?.metadataCount]);
+
+  const handleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setShowProfileModal(false);
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  // First-time login prompt logic
+  useEffect(() => {
+    if (!isAuthLoading && !user) {
+      const hasSeenPrompt = localStorage.getItem('hasSeenLoginPrompt');
+      if (!hasSeenPrompt) {
+        // Delay slightly for better UX
+        const timer = setTimeout(() => {
+          setShowLoginPrompt(true);
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isAuthLoading, user]);
+
+  const closeLoginPrompt = () => {
+    setShowLoginPrompt(false);
+    localStorage.setItem('hasSeenLoginPrompt', 'true');
+  };
 
   const generateVideoThumbnail = (file: File): Promise<string> => {
     return new Promise((resolve) => {
@@ -636,6 +848,11 @@ export default function App() {
   };
 
   const generateMetadata = async (fileId: string) => {
+    if (!user && !apiKey) {
+      handleLogin();
+      return;
+    }
+
     if (!apiKey) {
       setShowSettings(true);
       return;
@@ -755,6 +972,25 @@ export default function App() {
         category: result.category || '',
         status: 'done' 
       } : f));
+
+      // Update local count
+      setLocalMetadataCount(prev => {
+        const newCount = prev + 1;
+        localStorage.setItem('local_metadata_count', newCount.toString());
+        return newCount;
+      });
+
+      // Increment metadata count for logged in user in Firestore
+      if (user) {
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, {
+            metadataCount: increment(1)
+          });
+        } catch (error) {
+          console.error('Error incrementing metadata count:', error);
+        }
+      }
     } catch (error: any) {
       console.error("Generation error:", error);
       
@@ -841,16 +1077,16 @@ export default function App() {
 
     switch (targetPlatform) {
       case 'Adobe Stock':
-        return [filename, `"${title}"`, `"${keywords}"`].join(",");
+        return [filename, `"${title}"`, `"${keywords}"`, `"${category}"`].join(",");
       case 'Shutterstock':
         // Shutterstock: Filename, Description, Keywords, Categories
         return [filename, `"${description || title}"`, `"${keywords}"`, `"${category}"`].join(",");
       case 'Freepik':
-        return [filename, `"${title}"`, `"${keywords}"`].join(",");
+        return [filename, `"${title}"`, `"${keywords}"`, `"${category}"`].join(",");
       case 'Pond5':
-        return [filename, `"${title}"`, `"${description}"`, `"${keywords}"`].join(",");
+        return [filename, `"${title}"`, `"${description}"`, `"${keywords}"`, `"${category}"`].join(",");
       case 'Vecteezy':
-        return [filename, `"${title}"`, `"${description}"`, `"${keywords}"`].join(",");
+        return [filename, `"${title}"`, `"${description}"`, `"${keywords}"`, `"${category}"`].join(",");
       default:
         return [filename, `"${title}"`, `"${description}"`, `"${keywords}"`, `"${category}"`].join(",");
     }
@@ -859,17 +1095,17 @@ export default function App() {
   const getCSVHeaders = () => {
     switch (targetPlatform) {
       case 'Adobe Stock':
-        return ['Filename', 'Title', 'Keywords'].join(",");
+        return ['Filename', 'Title', 'Keywords', 'Category'].join(",");
       case 'Shutterstock':
         return ['Filename', 'Description', 'Keywords', 'Categories'].join(",");
       case 'Freepik':
-        return ['Filename', 'Title', 'Keywords'].join(",");
+        return ['Filename', 'Title', 'Keywords', 'Category'].join(",");
       case 'Pond5':
-        return ['Filename', 'Title', 'Description', 'Keywords'].join(",");
+        return ['Filename', 'Title', 'Description', 'Keywords', 'Category'].join(",");
       case 'Vecteezy':
-        return ['Filename', 'Title', 'Description', 'Keywords'].join(",");
+        return ['Filename', 'Title', 'Description', 'Keywords', 'Category'].join(",");
       default:
-        return ['Filename', 'Title', 'Description', 'Keywords'].join(",");
+        return ['Filename', 'Title', 'Description', 'Keywords', 'Category'].join(",");
     }
   };
 
@@ -1113,6 +1349,35 @@ export default function App() {
                 </div>
               </div>
               <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-gray-500">→</div>
+            </div>
+          </div>
+
+          {/* User Profile Card */}
+          <div 
+            onClick={() => user ? setShowProfileModal(true) : handleLogin()} 
+            className={`p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] ${isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-gray-50 border-black/5 hover:bg-gray-100'}`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
+                  {user ? (
+                    user.photoURL ? (
+                      <img src={user.photoURL} alt="Profile" className="w-5 h-5 rounded-full" />
+                    ) : (
+                      <UserIcon size={20} />
+                    )
+                  ) : (
+                    <LogIn size={20} />
+                  )}
+                </div>
+                <div>
+                  <p className="font-bold text-sm">{user ? user.displayName || 'User Profile' : 'Login with Google'}</p>
+                  <p className="text-[10px] text-gray-500">{user ? 'Manage your account' : 'Sign in to generate metadata'}</p>
+                </div>
+              </div>
+              <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-gray-500">
+                {user ? '→' : '+'}
+              </div>
             </div>
           </div>
 
@@ -1697,18 +1962,28 @@ export default function App() {
                   )}
 
                   <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                    <button 
-                      onClick={() => generateMetadata(file.id)}
-                      disabled={file.status === 'generating'}
-                      className={`flex-1 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
-                        file.status === 'done' 
-                          ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' 
-                          : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                      }`}
-                    >
-                      {file.status === 'generating' ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
-                      {file.status === 'done' ? 'Regenerate' : 'Generate'}
-                    </button>
+                    {user ? (
+                      <button 
+                        onClick={() => generateMetadata(file.id)}
+                        disabled={file.status === 'generating'}
+                        className={`flex-1 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                          file.status === 'done' 
+                            ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' 
+                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        }`}
+                      >
+                        {file.status === 'generating' ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
+                        {file.status === 'done' ? 'Regenerate' : 'Generate'}
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={handleLogin}
+                        className="flex-1 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                      >
+                        <LogIn size={16} />
+                        Login to Generate
+                      </button>
+                    )}
                     {file.status === 'done' && appMode === 'META' && (
                       <button 
                         onClick={() => downloadIndividualCSV(file.id)}
@@ -1926,6 +2201,166 @@ export default function App() {
         </div>
       </footer>
     </div>
+      {/* Profile Modal */}
+      <AnimatePresence>
+        {showProfileModal && user && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowProfileModal(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className={`relative w-full max-w-md rounded-[32px] p-8 shadow-2xl border overflow-hidden ${isDarkMode ? 'bg-[#141414] border-white/10' : 'bg-white border-black/5'}`}
+            >
+              {/* Background Glow */}
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-600/20 blur-[80px] rounded-full" />
+              
+              <div className="relative z-10">
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-2xl font-bold tracking-tight">User Profile</h3>
+                  <button 
+                    onClick={() => setShowProfileModal(false)}
+                    className={`p-2 rounded-full transition-colors ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="flex flex-col items-center text-center space-y-6">
+                  <div className="relative">
+                    <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-indigo-600 to-purple-600">
+                      <img 
+                        src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'User'}&background=random`} 
+                        alt="Profile" 
+                        className="w-full h-full rounded-full border-4 border-[#141414] object-cover"
+                      />
+                    </div>
+                    {userProfile?.role === 'admin' && (
+                      <div className="absolute -bottom-1 -right-1 bg-indigo-600 text-white p-1.5 rounded-full shadow-lg">
+                        <ShieldCheck size={14} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <h4 className="text-xl font-bold">{user.displayName || 'Microstock Contributor'}</h4>
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 w-full">
+                    <div className={`p-3 rounded-2xl border flex flex-col items-center justify-center ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-black/5'}`}>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Role</p>
+                      <p className="text-xs font-bold text-indigo-400 capitalize">{userProfile?.role || 'User'}</p>
+                    </div>
+                    <div className={`p-3 rounded-2xl border flex flex-col items-center justify-center ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-black/5'}`}>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Processed</p>
+                      <p className="text-xs font-bold text-emerald-400">{Math.max(userProfile?.metadataCount || 0, localMetadataCount)}</p>
+                    </div>
+                    <div className={`p-3 rounded-2xl border flex flex-col items-center justify-center ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-black/5'}`}>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Joined</p>
+                      <p className="text-xs font-bold text-indigo-400">
+                        {userProfile?.createdAt ? new Date(userProfile.createdAt).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={`w-full p-4 rounded-2xl border text-left ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-black/5'}`}>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Account Details</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500">User ID</span>
+                        <span className="font-mono text-gray-400">{user.uid.substring(0, 12)}...</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500">Last Login</span>
+                        <span className="text-gray-400">{userProfile?.lastLogin ? new Date(userProfile.lastLogin).toLocaleDateString() : 'Just now'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
+                  >
+                    <LogOut size={18} />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* First-time Login Prompt */}
+      <AnimatePresence>
+        {showLoginPrompt && !user && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeLoginPrompt}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 40 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 40 }}
+              className={`relative w-full max-w-lg rounded-[40px] p-10 shadow-2xl border overflow-hidden text-center ${isDarkMode ? 'bg-[#0f0f0f] border-white/10' : 'bg-white border-black/5'}`}
+            >
+              {/* Decorative Elements */}
+              <div className="absolute -top-24 -left-24 w-64 h-64 bg-indigo-600/20 blur-[100px] rounded-full" />
+              <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-purple-600/20 blur-[100px] rounded-full" />
+              
+              <div className="relative z-10 space-y-8">
+                <div className="inline-flex p-4 bg-indigo-600/20 rounded-3xl text-indigo-400 mb-2">
+                  <Sparkles size={40} />
+                </div>
+                
+                <div className="space-y-4">
+                  <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Welcome to MetaGen</h2>
+                  <p className={`text-lg leading-relaxed ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Sign in with Google to start generating high-quality microstock metadata and manage your profile.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <button 
+                    onClick={() => {
+                      handleLogin();
+                      closeLoginPrompt();
+                    }}
+                    className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-indigo-500/25 flex items-center justify-center gap-3"
+                  >
+                    <LogIn size={24} />
+                    Sign in with Google
+                  </button>
+                  <button 
+                    onClick={closeLoginPrompt}
+                    className={`w-full py-4 rounded-2xl font-bold transition-all ${isDarkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
+                  >
+                    Maybe Later
+                  </button>
+                </div>
+
+                <div className="pt-4 border-t border-white/5">
+                  <p className="text-xs text-gray-500 flex items-center justify-center gap-2">
+                    <ShieldCheck size={14} />
+                    Secure authentication powered by Firebase
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
