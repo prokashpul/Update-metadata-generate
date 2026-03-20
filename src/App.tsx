@@ -49,11 +49,30 @@ interface FileData {
   title: string;
   description: string;
   keywords: string;
+  category: string;
   status: 'idle' | 'generating' | 'done' | 'error';
   error?: string;
   customFilename?: string;
   type: 'image' | 'vector' | 'video';
 }
+
+const MICROSTOCK_CATEGORIES = [
+  "Animals",
+  "Architecture",
+  "Business",
+  "Education",
+  "Food & Drink",
+  "Health & Beauty",
+  "Holidays",
+  "Industrial",
+  "Nature",
+  "People",
+  "Sports",
+  "Technology",
+  "Transportation",
+  "Travel",
+  "Other"
+];
 
 const GLOBAL_CALENDAR_DATA = [
   {
@@ -441,7 +460,12 @@ export default function App() {
 
   useEffect(() => {
     if (apiKey) {
-      aiRef.current = new GoogleGenAI({ apiKey });
+      try {
+        aiRef.current = new GoogleGenAI({ apiKey });
+      } catch (e) {
+        console.error("Error initializing GoogleGenAI:", e);
+        aiRef.current = null;
+      }
     } else {
       aiRef.current = null;
     }
@@ -463,6 +487,7 @@ export default function App() {
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [bulkKeywords, setBulkKeywords] = useState('');
+  const [bulkCategory, setBulkCategory] = useState('');
   const [bulkEditMode, setBulkEditMode] = useState<'append' | 'replace'>('append');
   const [showSidebar, setShowSidebar] = useState(false);
   const [view, setView] = useState<'main' | 'calendar'>('main');
@@ -545,6 +570,7 @@ export default function App() {
         title: '',
         description: '',
         keywords: '',
+        category: '',
         status: 'idle',
         type: 'vector'
       });
@@ -568,6 +594,7 @@ export default function App() {
         title: '',
         description: '',
         keywords: '',
+        category: '',
         status: 'idle',
         type
       });
@@ -620,9 +647,19 @@ export default function App() {
     setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'generating' } : f));
 
     try {
-      if (!aiRef.current) {
-        aiRef.current = new GoogleGenAI({ apiKey });
+      if (!aiRef.current && apiKey) {
+        try {
+          aiRef.current = new GoogleGenAI({ apiKey });
+        } catch (e) {
+          console.error("Error initializing GoogleGenAI in generateMetadata:", e);
+          throw new Error("Failed to initialize AI. Please check your API Key.");
+        }
       }
+      
+      if (!aiRef.current) {
+        throw new Error("AI is not initialized. Please check your API Key.");
+      }
+      
       const ai = aiRef.current;
       
       let base64Data = '';
@@ -657,20 +694,22 @@ export default function App() {
       if (appMode === 'META') {
         const typeLabel = fileData.type === 'video' ? 'video' : 'image/vector';
         prompt = `Analyze this ${typeLabel} and provide optimized microstock metadata for ${targetPlatform}. 
-        Return ONLY a JSON object with three fields: 
+        Return ONLY a JSON object with four fields: 
         'title' (strictly limited to ${titleLength} characters, descriptive and keyword-rich),
         'description' (strictly limited to ${descriptionLength} characters, detailed and natural),
-        'keywords' (a comma-separated string of exactly ${tagsCount} highly relevant, high-traffic microstock keywords). 
+        'keywords' (a comma-separated string of exactly ${tagsCount} highly relevant, high-traffic microstock keywords),
+        'category' (one of the following: ${MICROSTOCK_CATEGORIES.join(', ')}).
         ${singleWordTags ? "Ensure keywords are mostly single words." : ""}
         Content Type: ${imageType}.
         Do not include any other text or explanation.`;
       } else {
         prompt = `Analyze this image and generate a highly detailed, professional prompt for an AI image generator (like Midjourney, DALL-E, or Stable Diffusion) that would recreate this scene, subject, and artistic style. 
         The prompt should include details about lighting, composition, camera settings (if applicable), and artistic medium.
-        Return ONLY a JSON object with three fields: 
+        Return ONLY a JSON object with four fields: 
         'title' (a short, catchy name for the prompt),
         'description' (the full, comprehensive AI generation prompt),
-        'keywords' (a comma-separated string of 10-15 style keywords and technical terms used in the prompt).
+        'keywords' (a comma-separated string of 10-15 style keywords and technical terms used in the prompt),
+        'category' (one of the following: ${MICROSTOCK_CATEGORIES.join(', ')}).
         Do not include any other text or explanation.`;
       }
 
@@ -703,7 +742,8 @@ export default function App() {
         result = {
           title: text.match(/"title":\s*"([^"]*)"/)?.[1] || '',
           description: text.match(/"description":\s*"([^"]*)"/)?.[1] || '',
-          keywords: text.match(/"keywords":\s*"([^"]*)"/)?.[1] || ''
+          keywords: text.match(/"keywords":\s*"([^"]*)"/)?.[1] || '',
+          category: text.match(/"category":\s*"([^"]*)"/)?.[1] || ''
         };
       }
       
@@ -712,6 +752,7 @@ export default function App() {
         title: result.title || '', 
         description: result.description || '',
         keywords: result.keywords || '', 
+        category: result.category || '',
         status: 'done' 
       } : f));
     } catch (error: any) {
@@ -724,8 +765,8 @@ export default function App() {
         errorMessage = 'Invalid API Key. Please check your AI Configuration settings.';
       } else if (errorStr.includes('429') || errorStr.toLowerCase().includes('quota')) {
         errorMessage = 'Rate limit exceeded or quota exhausted. Please wait a moment.';
-      } else if (errorStr.includes('fetch') || errorStr.toLowerCase().includes('network')) {
-        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (errorStr.includes('fetch') || errorStr.toLowerCase().includes('network') || errorStr.includes('Rpc failed') || errorStr.includes('xhr error')) {
+        errorMessage = 'Network error: Failed to reach Gemini API. This might be due to a proxy, firewall, or temporary service issue.';
       } else if (errorStr.includes('500') || errorStr.includes('503')) {
         errorMessage = 'Gemini server is busy or down. Please try again in a few minutes.';
       } else if (errorStr.toLowerCase().includes('safety') || errorStr.toLowerCase().includes('blocked')) {
@@ -796,13 +837,14 @@ export default function App() {
     const title = f.title.replace(/"/g, '""');
     const description = f.description.replace(/"/g, '""');
     const keywords = f.keywords.replace(/"/g, '""');
+    const category = f.category.replace(/"/g, '""');
 
     switch (targetPlatform) {
       case 'Adobe Stock':
         return [filename, `"${title}"`, `"${keywords}"`].join(",");
       case 'Shutterstock':
-        // Shutterstock: Filename, Description, Keywords, Categories (we'll leave categories empty)
-        return [filename, `"${description || title}"`, `"${keywords}"`, '""'].join(",");
+        // Shutterstock: Filename, Description, Keywords, Categories
+        return [filename, `"${description || title}"`, `"${keywords}"`, `"${category}"`].join(",");
       case 'Freepik':
         return [filename, `"${title}"`, `"${keywords}"`].join(",");
       case 'Pond5':
@@ -810,7 +852,7 @@ export default function App() {
       case 'Vecteezy':
         return [filename, `"${title}"`, `"${description}"`, `"${keywords}"`].join(",");
       default:
-        return [filename, `"${title}"`, `"${description}"`, `"${keywords}"`].join(",");
+        return [filename, `"${title}"`, `"${description}"`, `"${keywords}"`, `"${category}"`].join(",");
     }
   };
 
@@ -852,7 +894,7 @@ export default function App() {
     if (files.length === 0) return;
 
     files.forEach(f => {
-      const content = `Title: ${f.title}\nDescription: ${f.description}\nKeywords: ${f.keywords}`;
+      const content = `Title: ${f.title}\nDescription: ${f.description}\nKeywords: ${f.keywords}\nCategory: ${f.category}`;
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -892,7 +934,7 @@ export default function App() {
 
     // Add TXT files
     files.forEach(f => {
-      const content = `Title: ${f.title}\nDescription: ${f.description}\nKeywords: ${f.keywords}`;
+      const content = `Title: ${f.title}\nDescription: ${f.description}\nKeywords: ${f.keywords}\nCategory: ${f.category}`;
       const filename = getFormattedFilename(f).split('.')[0];
       zip.file(`${filename}.txt`, content);
     });
@@ -945,27 +987,35 @@ export default function App() {
   };
 
   const applyBulkKeywords = () => {
-    if (!bulkKeywords.trim()) return;
+    if (!bulkKeywords.trim() && !bulkCategory) return;
 
     setFiles(prev => prev.map(f => {
       if (selectedFileIds.includes(f.id)) {
         let newKeywords = f.keywords;
-        if (bulkEditMode === 'replace') {
-          newKeywords = bulkKeywords;
-        } else {
-          // Append logic: avoid duplicates and handle commas
-          const existing = f.keywords.split(',').map(k => k.trim()).filter(k => k);
-          const added = bulkKeywords.split(',').map(k => k.trim()).filter(k => k);
-          const combined = Array.from(new Set([...existing, ...added]));
-          newKeywords = combined.join(', ');
+        if (bulkKeywords.trim()) {
+          if (bulkEditMode === 'replace') {
+            newKeywords = bulkKeywords;
+          } else {
+            // Append logic: avoid duplicates and handle commas
+            const existing = f.keywords.split(',').map(k => k.trim()).filter(k => k);
+            const added = bulkKeywords.split(',').map(k => k.trim()).filter(k => k);
+            const combined = Array.from(new Set([...existing, ...added]));
+            newKeywords = combined.join(', ');
+          }
         }
-        return { ...f, keywords: newKeywords };
+        
+        return { 
+          ...f, 
+          keywords: newKeywords,
+          category: bulkCategory || f.category
+        };
       }
       return f;
     }));
 
     setShowBulkEdit(false);
     setBulkKeywords('');
+    setBulkCategory('');
     setSelectedFileIds([]);
   };
 
@@ -1617,6 +1667,28 @@ export default function App() {
                     </div>
                   )}
 
+                  {appMode === 'META' && (
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                          Category
+                        </label>
+                      </div>
+                      <select 
+                        value={file.category}
+                        onChange={(e) => setFiles(prev => prev.map(f => f.id === file.id ? { ...f, category: e.target.value } : f))}
+                        className={`w-full p-3 rounded-xl text-sm transition-all focus:ring-2 focus:ring-indigo-500/50 outline-none appearance-none ${
+                          isDarkMode ? 'bg-black/40 border-white/5 text-white' : 'bg-gray-50 border-black/5 text-gray-900'
+                        }`}
+                      >
+                        <option value="">Select Category</option>
+                        {MICROSTOCK_CATEGORIES.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   {file.status === 'error' && (
                     <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 text-red-400 text-xs">
                       <AlertCircle size={14} />
@@ -1760,7 +1832,7 @@ export default function App() {
             >
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h3 className="text-2xl font-bold">Bulk Edit Keywords</h3>
+                  <h3 className="text-2xl font-bold">Bulk Edit Metadata</h3>
                   <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                     Applying to {selectedFileIds.length} selected files
                   </p>
@@ -1807,6 +1879,24 @@ export default function App() {
                       : "Replace: All existing keywords for selected files will be overwritten."}
                   </p>
                 </div>
+
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Category
+                  </label>
+                  <select 
+                    value={bulkCategory}
+                    onChange={(e) => setBulkCategory(e.target.value)}
+                    className={`w-full p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all appearance-none ${
+                      isDarkMode ? 'bg-black/40 border border-white/10 text-white' : 'bg-gray-50 border border-black/10 text-gray-900'
+                    }`}
+                  >
+                    <option value="">Select Category (No change)</option>
+                    {MICROSTOCK_CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
                 
                 <div className="flex gap-3">
                   <button 
@@ -1817,7 +1907,7 @@ export default function App() {
                   </button>
                   <button 
                     onClick={applyBulkKeywords}
-                    disabled={!bulkKeywords.trim()}
+                    disabled={!bulkKeywords.trim() && !bulkCategory}
                     className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-2xl font-bold transition-all shadow-lg shadow-indigo-500/25"
                   >
                     Apply to {selectedFileIds.length} Files
