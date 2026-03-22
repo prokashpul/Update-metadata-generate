@@ -1383,7 +1383,7 @@ function AppContent() {
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-[90] w-80 flex-shrink-0 border-r overflow-y-auto transition-transform duration-300 transform
+        fixed inset-y-0 left-0 z-[140] md:z-[90] w-80 flex-shrink-0 border-r overflow-y-auto transition-transform duration-300 transform
         ${showSidebar ? 'translate-x-0' : '-translate-x-full'}
         md:relative md:translate-x-0 md:block
         ${isDarkMode ? 'bg-[#0f0f0f] border-white/10' : 'bg-white border-black/5'}
@@ -2045,7 +2045,7 @@ function AppContent() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={() => setShowSidebar(false)}
-          className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-[130] bg-black/60 backdrop-blur-sm md:hidden"
         />
       )}
     </AnimatePresence>
@@ -2053,7 +2053,7 @@ function AppContent() {
     {/* Modals */}
       <AnimatePresence>
         {showSettings && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2129,7 +2129,7 @@ function AppContent() {
       {/* Bulk Edit Modal */}
       <AnimatePresence>
         {showBulkEdit && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
