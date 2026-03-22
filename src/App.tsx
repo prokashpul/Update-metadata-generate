@@ -634,6 +634,37 @@ const AboutPage = ({ isDarkMode }: { isDarkMode: boolean }) => {
   );
 };
 
+const Tooltip = ({ children, text, isDarkMode, position = 'top', className = '' }: { children: React.ReactNode, text: string, isDarkMode: boolean, position?: 'top' | 'bottom' | 'left' | 'right', className?: string }) => {
+  const [show, setShow] = useState(false);
+  
+  const positionClasses = {
+    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
+    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
+    left: 'right-full top-1/2 -translate-y-1/2 mr-2',
+    right: 'left-full top-1/2 -translate-y-1/2 ml-2'
+  };
+
+  return (
+    <div className={`relative ${className.includes('w-full') || className.includes('flex-1') ? 'flex' : 'inline-flex'} ${className}`} onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      {children}
+      <AnimatePresence>
+        {show && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className={`absolute ${positionClasses[position]} px-3 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap z-[200] pointer-events-none shadow-2xl border ${
+              isDarkMode ? 'bg-[#1a1a1a] text-white border-white/10' : 'bg-white text-gray-900 border-black/5 shadow-md'
+            }`}
+          >
+            {text}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 function AppContent() {
   const [files, setFiles] = useState<FileData[]>([]);
   const [apiKey, setApiKey] = useState<string>('');
@@ -1250,7 +1281,7 @@ function AppContent() {
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-300 ${isDarkMode ? 'bg-[#0a0a0a] text-white' : 'bg-gray-50 text-gray-900'}`}>
       {/* Header */}
-      <header className={`sticky top-0 z-50 backdrop-blur-md border-b ${isDarkMode ? 'bg-black/50 border-white/10' : 'bg-white/80 border-black/5 shadow-sm'}`}>
+      <header className={`sticky top-0 z-[100] backdrop-blur-md border-b ${isDarkMode ? 'bg-black/50 border-white/10' : 'bg-white/80 border-black/5 shadow-sm'}`}>
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 items-center relative">
             {/* Left: Logo */}
@@ -1267,40 +1298,48 @@ function AppContent() {
             {/* Center: Menu items */}
             <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-2">
               {/* Home */}
-              <button 
-                onClick={() => setView('main')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${view === 'main' ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/30' : 'hover:bg-white/5 text-gray-400'}`}
-              >
-                <Home size={18} />
-                <span className="text-sm font-bold">Home</span>
-              </button>
+              <Tooltip text="Go to Home" isDarkMode={isDarkMode}>
+                <button 
+                  onClick={() => setView('main')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${view === 'main' ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/30' : 'hover:bg-white/5 text-gray-400'}`}
+                >
+                  <Home size={18} />
+                  <span className="text-sm font-bold">Home</span>
+                </button>
+              </Tooltip>
 
               {/* Calendar */}
-              <button 
-                onClick={() => setView('calendar')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${view === 'calendar' ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/30' : 'hover:bg-white/5 text-gray-400'}`}
-              >
-                <Calendar size={18} />
-                <span className="text-sm font-bold">Calendar</span>
-              </button>
+              <Tooltip text="View Content Calendar" isDarkMode={isDarkMode}>
+                <button 
+                  onClick={() => setView('calendar')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${view === 'calendar' ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/30' : 'hover:bg-white/5 text-gray-400'}`}
+                >
+                  <Calendar size={18} />
+                  <span className="text-sm font-bold">Calendar</span>
+                </button>
+              </Tooltip>
 
               {/* Stats */}
-              <button 
-                onClick={() => setView('stats')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${view === 'stats' ? 'bg-emerald-500/10 text-emerald-400 border border-indigo-500/30' : 'hover:bg-white/5 text-gray-400'}`}
-              >
-                <BarChart3 size={18} />
-                <span className="text-sm font-bold">Stats</span>
-              </button>
+              <Tooltip text="View Generation Statistics" isDarkMode={isDarkMode}>
+                <button 
+                  onClick={() => setView('stats')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${view === 'stats' ? 'bg-emerald-500/10 text-emerald-400 border border-indigo-500/30' : 'hover:bg-white/5 text-gray-400'}`}
+                >
+                  <BarChart3 size={18} />
+                  <span className="text-sm font-bold">Stats</span>
+                </button>
+              </Tooltip>
 
               {/* About */}
-              <button 
-                onClick={() => setView('about')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${view === 'about' ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/30' : 'hover:bg-white/5 text-gray-400'}`}
-              >
-                <Info size={18} />
-                <span className="text-sm font-bold">About</span>
-              </button>
+              <Tooltip text="About MetaGen AI" isDarkMode={isDarkMode}>
+                <button 
+                  onClick={() => setView('about')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${view === 'about' ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/30' : 'hover:bg-white/5 text-gray-400'}`}
+                >
+                  <Info size={18} />
+                  <span className="text-sm font-bold">About</span>
+                </button>
+              </Tooltip>
             </div>
 
             {/* Right: Controls */}
@@ -1309,18 +1348,22 @@ function AppContent() {
                 <div className="w-px h-6 bg-white/10 mx-2" />
 
                 {/* Theme Toggle */}
-                <div className={`flex p-1 rounded-xl ${isDarkMode ? 'bg-black/40' : 'bg-gray-100'}`}>
-                  <button onClick={() => setIsDarkMode(false)} className={`p-2 rounded-lg transition-all ${!isDarkMode ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}><Sun size={18} /></button>
-                  <button onClick={() => setIsDarkMode(true)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-[#1a1a1a] text-indigo-400 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}><Moon size={18} /></button>
-                </div>
+                <Tooltip text={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} isDarkMode={isDarkMode}>
+                  <div className={`flex p-1 rounded-xl ${isDarkMode ? 'bg-black/40' : 'bg-gray-100'}`}>
+                    <button onClick={() => setIsDarkMode(false)} className={`p-2 rounded-lg transition-all ${!isDarkMode ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}><Sun size={18} /></button>
+                    <button onClick={() => setIsDarkMode(true)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-[#1a1a1a] text-indigo-400 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}><Moon size={18} /></button>
+                  </div>
+                </Tooltip>
 
                 {/* Settings */}
-                <button 
-                  onClick={() => setShowSettings(true)}
-                  className={`p-2 rounded-xl transition-all ${isDarkMode ? 'hover:bg-white/10 text-gray-400' : 'hover:bg-black/5 text-gray-600'}`}
-                >
-                  <Settings size={20} />
-                </button>
+                <Tooltip text="AI Configuration & Keys" isDarkMode={isDarkMode}>
+                  <button 
+                    onClick={() => setShowSettings(true)}
+                    className={`p-2 rounded-xl transition-all ${isDarkMode ? 'hover:bg-white/10 text-gray-400' : 'hover:bg-black/5 text-gray-600'}`}
+                  >
+                    <Settings size={20} />
+                  </button>
+                </Tooltip>
               </div>
 
               {/* Mobile Menu Toggle */}
@@ -1340,7 +1383,7 @@ function AppContent() {
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-80 flex-shrink-0 border-r overflow-y-auto transition-transform duration-300 transform
+        fixed inset-y-0 left-0 z-[90] w-80 flex-shrink-0 border-r overflow-y-auto transition-transform duration-300 transform
         ${showSidebar ? 'translate-x-0' : '-translate-x-full'}
         md:relative md:translate-x-0 md:block
         ${isDarkMode ? 'bg-[#0f0f0f] border-white/10' : 'bg-white border-black/5'}
@@ -1398,9 +1441,11 @@ function AppContent() {
           {/* Target Platform */}
           {appMode === 'META' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                <Sparkles size={12} /> Target Platform
-              </div>
+              <Tooltip text="Select the stock platform for optimized CSV format" isDarkMode={isDarkMode} position="right">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                  <Sparkles size={12} /> Target Platform
+                </div>
+              </Tooltip>
               <div className="grid grid-cols-2 gap-2">
                 {['Adobe Stock', 'Shutterstock', 'Freepik', 'Pond5', 'Vecteezy', 'Generic CSV'].map(p => (
                   <button 
@@ -1418,9 +1463,11 @@ function AppContent() {
           {/* File Extension */}
           {appMode === 'META' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                <ImageIcon size={12} /> File Extension Name
-              </div>
+              <Tooltip text="Choose the file extension to include in the CSV" isDarkMode={isDarkMode} position="right">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                  <ImageIcon size={12} /> File Extension Name
+                </div>
+              </Tooltip>
               <div className="grid grid-cols-4 gap-2">
                 {['Default', 'JPG', 'JPEG', 'PNG', 'EPS', 'AI', 'MP4', 'SVG'].map(e => (
                   <button 
@@ -1528,14 +1575,16 @@ function AppContent() {
           </div>
 
           {/* Main Generate Button */}
-          <button 
-            onClick={generateAll}
-            disabled={isGeneratingAll || files.length === 0}
-            className="w-full py-4 bg-white text-black hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold flex items-center justify-center gap-3 transition-all shadow-xl"
-          >
-            {isGeneratingAll ? <Loader2 className="animate-spin" size={20} /> : <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-black border-b-[6px] border-b-transparent ml-1" />}
-            {appMode === 'META' ? 'Generate Meta' : 'Generate Prompt'}
-          </button>
+          <Tooltip text={appMode === 'META' ? "Analyze all images and generate metadata" : "Analyze all images and generate AI prompts"} isDarkMode={isDarkMode} position="top" className="w-full">
+            <button 
+              onClick={generateAll}
+              disabled={isGeneratingAll || files.length === 0}
+              className="w-full py-4 bg-white text-black hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-bold flex items-center justify-center gap-3 transition-all shadow-xl"
+            >
+              {isGeneratingAll ? <Loader2 className="animate-spin" size={20} /> : <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-black border-b-[6px] border-b-transparent ml-1" />}
+              {appMode === 'META' ? 'Generate Meta' : 'Generate Prompt'}
+            </button>
+          </Tooltip>
         </div>
       </aside>
 
@@ -1632,80 +1681,93 @@ function AppContent() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button 
-                  onClick={selectAllFiles}
-                  className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg transition-all ${isDarkMode ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                >
-                  Select All
-                </button>
-                <button 
-                  onClick={deselectAllFiles}
-                  className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg transition-all ${isDarkMode ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                >
-                  Deselect All
-                </button>
+                <Tooltip text="Select all uploaded files" isDarkMode={isDarkMode}>
+                  <button 
+                    onClick={selectAllFiles}
+                    className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg transition-all ${isDarkMode ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  >
+                    Select All
+                  </button>
+                </Tooltip>
+                <Tooltip text="Deselect all files" isDarkMode={isDarkMode}>
+                  <button 
+                    onClick={deselectAllFiles}
+                    className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg transition-all ${isDarkMode ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  >
+                    Deselect All
+                  </button>
+                </Tooltip>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               {selectedFileIds.length > 0 && appMode === 'META' && (
-                <button 
-                  onClick={() => setShowBulkEdit(true)}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-semibold transition-all shadow-lg shadow-emerald-500/25"
-                >
-                  <Edit3 size={18} />
-                  Bulk Edit ({selectedFileIds.length})
-                </button>
+                <Tooltip text="Edit metadata for all selected files at once" isDarkMode={isDarkMode}>
+                  <button 
+                    onClick={() => setShowBulkEdit(true)}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-semibold transition-all shadow-lg shadow-emerald-500/25"
+                  >
+                    <Edit3 size={18} />
+                    Bulk Edit ({selectedFileIds.length})
+                  </button>
+                </Tooltip>
               )}
 
               {completedCount > 0 && appMode === 'META' && (
-                <button 
-                  onClick={batchRenameByTitle}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${
-                    isDarkMode 
-                      ? 'bg-blue-950/30 border-blue-500/30 text-blue-400 hover:bg-blue-900/40' 
-                      : 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100'
-                  }`}
-                  title="Rename files based on generated titles"
-                >
-                  <RefreshCw size={16} />
-                  Rename by Title
-                </button>
+                <Tooltip text="Rename files using their generated AI titles" isDarkMode={isDarkMode}>
+                  <button 
+                    onClick={batchRenameByTitle}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${
+                      isDarkMode 
+                        ? 'bg-blue-950/30 border-blue-500/30 text-blue-400 hover:bg-blue-900/40' 
+                        : 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100'
+                    }`}
+                  >
+                    <RefreshCw size={16} />
+                    Rename by Title
+                  </button>
+                </Tooltip>
               )}
               
-              <button 
-                onClick={clearAllFiles}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${
-                  isDarkMode 
-                    ? 'bg-[#1a1a1a] border-white/10 text-gray-400 hover:bg-white/5' 
-                    : 'bg-gray-100 border-black/5 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                <Eraser size={16} />
-                Clean
-              </button>
-
-              {appMode === 'META' && (
+              <Tooltip text="Remove all files and reset" isDarkMode={isDarkMode}>
                 <button 
-                  onClick={exportToZIP}
+                  onClick={clearAllFiles}
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${
                     isDarkMode 
-                      ? 'bg-orange-950/30 border-orange-500/30 text-orange-400 hover:bg-orange-900/40' 
-                      : 'bg-orange-50 border-orange-200 text-orange-600 hover:bg-orange-100'
+                      ? 'bg-[#1a1a1a] border-white/10 text-gray-400 hover:bg-white/5' 
+                      : 'bg-gray-100 border-black/5 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  <FileArchive size={16} />
-                  Zip (Embedded)
+                  <Eraser size={16} />
+                  Clean
                 </button>
+              </Tooltip>
+
+              {appMode === 'META' && (
+                <Tooltip text="Download all metadata as a ZIP with embedded data" isDarkMode={isDarkMode}>
+                  <button 
+                    onClick={exportToZIP}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border ${
+                      isDarkMode 
+                        ? 'bg-orange-950/30 border-orange-500/30 text-orange-400 hover:bg-orange-900/40' 
+                        : 'bg-orange-50 border-orange-200 text-orange-600 hover:bg-orange-100'
+                    }`}
+                  >
+                    <FileArchive size={16} />
+                    Zip (Embedded)
+                  </button>
+                </Tooltip>
               )}
 
-              <button 
-                onClick={generateAll}
-                disabled={isGeneratingAll || files.every(f => f.status === 'done')}
-                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full font-semibold transition-all shadow-lg shadow-indigo-500/25"
-              >
-                {isGeneratingAll ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
-                Generate All
-              </button>
+              <Tooltip text="Generate metadata for all pending files" isDarkMode={isDarkMode}>
+                <button 
+                  onClick={generateAll}
+                  disabled={isGeneratingAll || files.every(f => f.status === 'done')}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full font-semibold transition-all shadow-lg shadow-indigo-500/25"
+                >
+                  {isGeneratingAll ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
+                  Generate All
+                </button>
+              </Tooltip>
             </div>
           </div>
         )}
@@ -1812,12 +1874,14 @@ function AppContent() {
                         <label className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                           Title
                         </label>
-                        <button 
-                          onClick={() => copyToClipboard(file.title)}
-                          className={`p-1 rounded hover:bg-indigo-500/10 transition-colors ${isDarkMode ? 'text-gray-500 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'}`}
-                        >
-                          <Copy size={14} />
-                        </button>
+                        <Tooltip text="Copy title to clipboard" isDarkMode={isDarkMode}>
+                          <button 
+                            onClick={() => copyToClipboard(file.title)}
+                            className={`p-1 rounded hover:bg-indigo-500/10 transition-colors ${isDarkMode ? 'text-gray-500 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'}`}
+                          >
+                            <Copy size={14} />
+                          </button>
+                        </Tooltip>
                       </div>
                       <textarea 
                         value={file.title}
@@ -1840,12 +1904,14 @@ function AppContent() {
                       <label className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                         {appMode === 'META' ? 'Description' : 'AI Generation Prompt'}
                       </label>
-                      <button 
-                        onClick={() => copyToClipboard(file.description)}
-                        className={`p-1 rounded hover:bg-indigo-500/10 transition-colors ${isDarkMode ? 'text-gray-500 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'}`}
-                      >
-                        <Copy size={14} />
-                      </button>
+                      <Tooltip text={appMode === 'META' ? "Copy description to clipboard" : "Copy prompt to clipboard"} isDarkMode={isDarkMode}>
+                        <button 
+                          onClick={() => copyToClipboard(file.description)}
+                          className={`p-1 rounded hover:bg-indigo-500/10 transition-colors ${isDarkMode ? 'text-gray-500 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'}`}
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </Tooltip>
                     </div>
                     <textarea 
                       value={file.description}
@@ -1863,12 +1929,14 @@ function AppContent() {
                         <label className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                           Keywords
                         </label>
-                        <button 
-                          onClick={() => copyToClipboard(file.keywords)}
-                          className={`p-1 rounded hover:bg-indigo-500/10 transition-colors ${isDarkMode ? 'text-gray-500 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'}`}
-                        >
-                          <Copy size={14} />
-                        </button>
+                        <Tooltip text="Copy keywords to clipboard" isDarkMode={isDarkMode}>
+                          <button 
+                            onClick={() => copyToClipboard(file.keywords)}
+                            className={`p-1 rounded hover:bg-indigo-500/10 transition-colors ${isDarkMode ? 'text-gray-500 hover:text-indigo-400' : 'text-gray-400 hover:text-indigo-600'}`}
+                          >
+                            <Copy size={14} />
+                          </button>
+                        </Tooltip>
                       </div>
                       <textarea 
                         value={file.keywords}
@@ -1911,26 +1979,29 @@ function AppContent() {
                   )}
 
                   <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                    <button 
-                      onClick={() => generateMetadata(file.id)}
-                      disabled={file.status === 'generating'}
-                      className={`flex-1 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
-                        file.status === 'done' 
-                          ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' 
-                          : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                      }`}
-                    >
-                      {file.status === 'generating' ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
-                      {file.status === 'done' ? 'Regenerate' : 'Generate'}
-                    </button>
-                    {file.status === 'done' && appMode === 'META' && (
+                    <Tooltip text={file.status === 'done' ? 'Regenerate metadata for this file' : 'Generate metadata for this file'} isDarkMode={isDarkMode} className="flex-1">
                       <button 
-                        onClick={() => downloadIndividualCSV(file.id)}
-                        className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                        title="Download CSV"
+                        onClick={() => generateMetadata(file.id)}
+                        disabled={file.status === 'generating'}
+                        className={`w-full py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                          file.status === 'done' 
+                            ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' 
+                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        }`}
                       >
-                        <Download size={18} />
+                        {file.status === 'generating' ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
+                        {file.status === 'done' ? 'Regenerate' : 'Generate'}
                       </button>
+                    </Tooltip>
+                    {file.status === 'done' && appMode === 'META' && (
+                      <Tooltip text="Download CSV for this file" isDarkMode={isDarkMode}>
+                        <button 
+                          onClick={() => downloadIndividualCSV(file.id)}
+                          className={`p-2.5 rounded-xl transition-all ${isDarkMode ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        >
+                          <Download size={18} />
+                        </button>
+                      </Tooltip>
                     )}
                   </div>
                 </div>
@@ -1974,7 +2045,7 @@ function AppContent() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={() => setShowSidebar(false)}
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm md:hidden"
         />
       )}
     </AnimatePresence>
@@ -1982,7 +2053,7 @@ function AppContent() {
     {/* Modals */}
       <AnimatePresence>
         {showSettings && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2058,7 +2129,7 @@ function AppContent() {
       {/* Bulk Edit Modal */}
       <AnimatePresence>
         {showBulkEdit && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
