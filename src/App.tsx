@@ -562,6 +562,78 @@ const StatsView = ({ count, isDarkMode }: { count: number, isDarkMode: boolean }
   );
 };
 
+const AboutPage = ({ isDarkMode }: { isDarkMode: boolean }) => {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-4xl mx-auto py-12 px-4"
+    >
+      <div className={`rounded-[32px] p-10 border ${isDarkMode ? 'bg-[#141414] border-white/10' : 'bg-white border-black/5 shadow-xl'}`}>
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <Sparkles className="text-white w-10 h-10" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">About MetaGen AI</h1>
+            <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>The Ultimate Metadata Solution for Microstock Contributors</p>
+          </div>
+        </div>
+
+        <div className="space-y-10">
+          <section>
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              <Info className="text-indigo-500" size={24} />
+              Our Mission
+            </h2>
+            <p className={`leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              MetaGen AI was built with a single goal: to empower microstock contributors by automating the most tedious part of their workflow—metadata generation. We leverage advanced AI models to analyze your images and generate high-quality, SEO-optimized titles, descriptions, and keywords that help your content stand out and sell more.
+            </p>
+          </section>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <section className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-black/20 border-white/5' : 'bg-gray-50 border-black/5'}`}>
+              <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
+                <Sparkles className="text-indigo-500" size={20} />
+                AI-Powered Precision
+              </h3>
+              <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Using Google's Gemini models, we provide context-aware metadata that accurately describes your visual content, ensuring better discoverability across all major stock platforms.
+              </p>
+            </section>
+
+            <section className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-black/20 border-white/5' : 'bg-gray-50 border-black/5'}`}>
+              <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
+                <Globe className="text-indigo-500" size={20} />
+                Platform Optimized
+              </h3>
+              <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Whether it's Adobe Stock, Shutterstock, or Freepik, our system generates CSV files perfectly formatted for your target platform, saving you hours of manual entry.
+              </p>
+            </section>
+          </div>
+
+          <section>
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              <ShieldCheck className="text-emerald-500" size={24} />
+              Privacy & Security
+            </h2>
+            <p className={`leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Your data is your own. We don't store your images permanently, and all processing is done securely. Your API keys are stored locally in your browser and are never sent to our servers.
+            </p>
+          </section>
+
+          <footer className="pt-8 border-t border-white/5 text-center">
+            <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              Version 2.5.0 • Built with ❤️ for the Creative Community
+            </p>
+          </footer>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 function AppContent() {
   const [files, setFiles] = useState<FileData[]>([]);
   const [apiKey, setApiKey] = useState<string>('');
@@ -569,7 +641,7 @@ function AppContent() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   const [localMetadataCount, setLocalMetadataCount] = useState<number>(0);
-  const [view, setView] = useState<'main' | 'calendar' | 'stats'>('main');
+  const [view, setView] = useState<'main' | 'calendar' | 'stats' | 'about'>('main');
   const aiRef = useRef<any>(null);
 
   useEffect(() => {
@@ -1176,21 +1248,97 @@ function AppContent() {
   const pendingCount = files.length - completedCount;
 
   return (
-    <div className={`min-h-screen flex transition-colors duration-300 ${isDarkMode ? 'bg-[#0a0a0a] text-white' : 'bg-gray-50 text-gray-900'}`}>
-      {/* Mobile Sidebar Overlay */}
-      <AnimatePresence>
-        {showSidebar && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowSidebar(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 md:hidden"
-          />
-        )}
-      </AnimatePresence>
+    <div className={`min-h-screen flex flex-col transition-colors duration-300 ${isDarkMode ? 'bg-[#0a0a0a] text-white' : 'bg-gray-50 text-gray-900'}`}>
+      {/* Header */}
+      <header className={`sticky top-0 z-50 backdrop-blur-md border-b ${isDarkMode ? 'bg-black/50 border-white/10' : 'bg-white/80 border-black/5 shadow-sm'}`}>
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-20 items-center relative">
+            {/* Left: Logo */}
+            <div 
+              onClick={() => setView('main')}
+              className="flex items-center gap-3 cursor-pointer group z-10"
+            >
+              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-lg shadow-indigo-500/20">
+                <Sparkles className="text-white w-6 h-6" />
+              </div>
+              <span className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">MetaGen</span>
+            </div>
 
-      {/* Sidebar */}
+            {/* Center: Menu items */}
+            <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-2">
+              {/* Home */}
+              <button 
+                onClick={() => setView('main')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${view === 'main' ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/30' : 'hover:bg-white/5 text-gray-400'}`}
+              >
+                <Home size={18} />
+                <span className="text-sm font-bold">Home</span>
+              </button>
+
+              {/* Calendar */}
+              <button 
+                onClick={() => setView('calendar')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${view === 'calendar' ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/30' : 'hover:bg-white/5 text-gray-400'}`}
+              >
+                <Calendar size={18} />
+                <span className="text-sm font-bold">Calendar</span>
+              </button>
+
+              {/* Stats */}
+              <button 
+                onClick={() => setView('stats')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${view === 'stats' ? 'bg-emerald-500/10 text-emerald-400 border border-indigo-500/30' : 'hover:bg-white/5 text-gray-400'}`}
+              >
+                <BarChart3 size={18} />
+                <span className="text-sm font-bold">Stats</span>
+              </button>
+
+              {/* About */}
+              <button 
+                onClick={() => setView('about')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${view === 'about' ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/30' : 'hover:bg-white/5 text-gray-400'}`}
+              >
+                <Info size={18} />
+                <span className="text-sm font-bold">About</span>
+              </button>
+            </div>
+
+            {/* Right: Controls */}
+            <div className="flex items-center gap-2 z-10">
+              <div className="hidden md:flex items-center gap-2">
+                <div className="w-px h-6 bg-white/10 mx-2" />
+
+                {/* Theme Toggle */}
+                <div className={`flex p-1 rounded-xl ${isDarkMode ? 'bg-black/40' : 'bg-gray-100'}`}>
+                  <button onClick={() => setIsDarkMode(false)} className={`p-2 rounded-lg transition-all ${!isDarkMode ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}><Sun size={18} /></button>
+                  <button onClick={() => setIsDarkMode(true)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-[#1a1a1a] text-indigo-400 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}><Moon size={18} /></button>
+                </div>
+
+                {/* Settings */}
+                <button 
+                  onClick={() => setShowSettings(true)}
+                  className={`p-2 rounded-xl transition-all ${isDarkMode ? 'hover:bg-white/10 text-gray-400' : 'hover:bg-black/5 text-gray-600'}`}
+                >
+                  <Settings size={20} />
+                </button>
+              </div>
+
+              {/* Mobile Menu Toggle */}
+              <div className="md:hidden flex items-center gap-3">
+                <button 
+                  onClick={() => setShowSidebar(!showSidebar)}
+                  className={`p-2 rounded-lg ${isDarkMode ? 'bg-white/10 text-white' : 'bg-black/5 text-gray-900'}`}
+                >
+                  <Menu size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-80 flex-shrink-0 border-r overflow-y-auto transition-transform duration-300 transform
         ${showSidebar ? 'translate-x-0' : '-translate-x-full'}
@@ -1199,11 +1347,8 @@ function AppContent() {
       `}>
         <div className="p-6 space-y-8">
           <div className="flex items-center justify-between md:hidden mb-4">
-            <div 
-              onClick={() => setView('main')}
-              className="flex items-center gap-2 cursor-pointer group"
-            >
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                 <Sparkles className="text-white w-5 h-5" />
               </div>
               <span className="text-xl font-bold tracking-tight">MetaGen</span>
@@ -1215,85 +1360,39 @@ function AppContent() {
               <X size={20} />
             </button>
           </div>
-          {/* Theme Toggle */}
-          <div className={`flex p-1 rounded-xl ${isDarkMode ? 'bg-black/40' : 'bg-gray-100'}`}>
-            <button onClick={() => setIsDarkMode(false)} className={`flex-1 py-2 rounded-lg flex justify-center ${!isDarkMode ? 'bg-white shadow-sm' : 'text-gray-500'}`}><Sun size={18} /></button>
-            <button className={`flex-1 py-2 rounded-lg flex justify-center text-gray-500`}><Monitor size={18} /></button>
-            <button onClick={() => setIsDarkMode(true)} className={`flex-1 py-2 rounded-lg flex justify-center ${isDarkMode ? 'bg-[#1a1a1a] shadow-sm' : 'text-gray-500'}`}><Moon size={18} /></button>
-          </div>
 
-          {/* Home Page Card */}
-          <div 
-            onClick={() => {
-              setView('main');
-              setShowSidebar(false);
-            }} 
-            className={`p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] ${view === 'main' ? 'bg-indigo-600/10 border-indigo-500/50' : isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-gray-50 border-black/5 hover:bg-gray-100'}`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400"><Home size={20} /></div>
-                <div>
-                  <p className="font-bold text-sm">Home Page</p>
-                  <p className="text-[10px] text-gray-500">Back to Metadata Generator</p>
-                </div>
-              </div>
-              <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-gray-500">→</div>
-            </div>
-          </div>
-
-          {/* AI Config Card */}
-          <div onClick={() => setShowSettings(true)} className={`p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] ${isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-gray-50 border-black/5 hover:bg-gray-100'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400"><Settings size={20} /></div>
-                <div>
-                  <p className="font-bold text-sm">AI Configuration</p>
-                  <p className="text-[10px] text-gray-500">Manage Keys & Providers</p>
-                </div>
-              </div>
-              <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-gray-500">+</div>
-            </div>
-          </div>
-
-          {/* Content Calendar Card */}
-          <div 
-            onClick={() => {
-              setView('calendar');
-              setShowSidebar(false);
-            }}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] ${view === 'calendar' ? 'bg-indigo-600/10 border-indigo-500/50' : isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-gray-50 border-black/5 hover:bg-gray-100'}`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400"><Calendar size={20} /></div>
-                <div>
-                  <p className="font-bold text-sm">Content Calendar</p>
-                  <p className="text-[10px] text-gray-500">Plan Your Uploads</p>
-                </div>
-              </div>
-              <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-gray-500">→</div>
-            </div>
-          </div>
-
-          {/* Processed Stats Card */}
-          <div 
-            onClick={() => {
-              setView('stats');
-              setShowSidebar(false);
-            }}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] ${view === 'stats' ? 'bg-indigo-600/10 border-indigo-500/50' : isDarkMode ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-gray-50 border-black/5 hover:bg-gray-100'}`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400"><BarChart3 size={20} /></div>
-                <div>
-                  <p className="font-bold text-sm">Processed Stats</p>
-                  <p className="text-[10px] text-gray-500">{localMetadataCount} Files Generated</p>
-                </div>
-              </div>
-              <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-gray-500">→</div>
-            </div>
+          {/* Mobile Navigation (Visible only in sidebar on mobile) */}
+          <div className="md:hidden space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Navigation</div>
+            <button 
+              onClick={() => { setView('main'); setShowSidebar(false); }}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${view === 'main' ? 'bg-indigo-600 text-white' : 'hover:bg-white/5 text-gray-400'}`}
+            >
+              <Home size={18} />
+              <span className="text-sm font-bold">Home</span>
+            </button>
+            <button 
+              onClick={() => { setView('calendar'); setShowSidebar(false); }}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${view === 'calendar' ? 'bg-indigo-600 text-white' : 'hover:bg-white/5 text-gray-400'}`}
+            >
+              <Calendar size={18} />
+              <span className="text-sm font-bold">Calendar</span>
+            </button>
+            <button 
+              onClick={() => { setView('stats'); setShowSidebar(false); }}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${view === 'stats' ? 'bg-indigo-600 text-white' : 'hover:bg-white/5 text-gray-400'}`}
+            >
+              <BarChart3 size={18} />
+              <span className="text-sm font-bold">Stats</span>
+            </button>
+            <button 
+              onClick={() => { setView('about'); setShowSidebar(false); }}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${view === 'about' ? 'bg-indigo-600 text-white' : 'hover:bg-white/5 text-gray-400'}`}
+            >
+              <Info size={18} />
+              <span className="text-sm font-bold">About</span>
+            </button>
+            <div className="h-px bg-white/10 my-4" />
           </div>
 
           {/* Target Platform */}
@@ -1442,39 +1541,6 @@ function AppContent() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <nav className={`sticky top-0 z-40 backdrop-blur-md border-b md:hidden ${isDarkMode ? 'bg-black/50 border-white/10' : 'bg-white/80 border-black/5'}`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16 items-center">
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => setShowSidebar(true)}
-                  className={`p-2 rounded-lg ${isDarkMode ? 'bg-white/10 text-white' : 'bg-black/5 text-gray-900'}`}
-                >
-                  <Menu size={20} />
-                </button>
-                <div 
-                  onClick={() => {
-                    setView('main');
-                    setShowSidebar(false);
-                  }}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                    <Sparkles className="text-white w-5 h-5" />
-                  </div>
-                  <span className="text-xl font-bold tracking-tight">MetaGen</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowSettings(true)}
-                className={`p-2 rounded-full ${isDarkMode ? 'bg-white/10' : 'bg-black/5'}`}
-              >
-                <Settings size={20} />
-              </button>
-            </div>
-          </div>
-        </nav>
-
         <main className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-12">
           <div className="min-h-full flex flex-col">
             <div className="flex-1">
@@ -1882,8 +1948,10 @@ function AppContent() {
         </>
         ) : view === 'calendar' ? (
           <ContentCalendar isDarkMode={isDarkMode} />
-        ) : (
+        ) : view === 'stats' ? (
           <StatsView count={localMetadataCount} isDarkMode={isDarkMode} />
+        ) : (
+          <AboutPage isDarkMode={isDarkMode} />
         )}
             </div>
             
@@ -1895,12 +1963,26 @@ function AppContent() {
             </footer>
           </div>
         </main>
+      </div>
     </div>
 
-      {/* Settings Modal */}
+    {/* Mobile Sidebar Overlay */}
+    <AnimatePresence>
+      {showSidebar && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setShowSidebar(false)}
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+        />
+      )}
+    </AnimatePresence>
+
+    {/* Modals */}
       <AnimatePresence>
         {showSettings && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
