@@ -743,14 +743,68 @@ function AppContent() {
       };
       video.onseeked = () => {
         const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        const MAX_SIZE = 1024;
+        let width = video.videoWidth;
+        let height = video.videoHeight;
+
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg'));
+        ctx?.drawImage(video, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
       };
       video.onerror = () => resolve('');
       video.src = URL.createObjectURL(file);
+    });
+  };
+
+  const getOptimizedImageBase64 = (file: File): Promise<{data: string, mimeType: string}> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 1024;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        resolve({
+          data: dataUrl.split(',')[1],
+          mimeType: 'image/jpeg'
+        });
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => reject(new Error("Failed to load image for processing"));
+      img.src = URL.createObjectURL(file);
     });
   };
 
@@ -774,9 +828,9 @@ function AppContent() {
     const vectorFiles = uploadedFiles.filter(f => isVector(f.name));
     const otherFiles = uploadedFiles.filter(f => !isVector(f.name));
 
+    // Process vectors
     for (const file of vectorFiles) {
       const baseName = file.name.substring(0, file.name.lastIndexOf('.'));
-      // Look for an image with the same base name
       const previewIdx = otherFiles.findIndex(f => isImage(f.name) && f.name.substring(0, f.name.lastIndexOf('.')) === baseName);
       
       let previewFile: File | undefined;
@@ -788,7 +842,7 @@ function AppContent() {
         id: Math.random().toString(36).substring(7),
         file,
         previewFile,
-        preview: previewFile ? URL.createObjectURL(previewFile) : '', // Empty if no preview yet
+        preview: previewFile ? URL.createObjectURL(previewFile) : '',
         title: '',
         description: '',
         keywords: '',
@@ -798,10 +852,9 @@ function AppContent() {
       });
     }
 
-    // Process remaining files (images and videos)
-    for (const file of otherFiles) {
+    // Process remaining files (images and videos) in parallel
+    const otherProcessedFiles = await Promise.all(otherFiles.map(async (file) => {
       const type = isVideo(file.name) ? 'video' : 'image';
-      
       let preview = '';
       if (type === 'image') {
         preview = URL.createObjectURL(file);
@@ -809,7 +862,7 @@ function AppContent() {
         preview = await generateVideoThumbnail(file);
       }
 
-      newFiles.push({
+      return {
         id: Math.random().toString(36).substring(7),
         file,
         preview,
@@ -819,10 +872,10 @@ function AppContent() {
         category: '',
         status: 'idle',
         type
-      });
-    }
+      } as FileData;
+    }));
 
-    setFiles(prev => [...prev, ...newFiles].slice(0, 30)); // Increased limit to 30
+    setFiles(prev => [...prev, ...newFiles, ...otherProcessedFiles].slice(0, 50));
   };
 
   const attachPreviewToFile = (id: string, previewFile: File) => {
@@ -891,12 +944,9 @@ function AppContent() {
         if (!fileData.previewFile) {
           throw new Error('Please upload a preview image for the vector file.');
         }
-        const reader = new FileReader();
-        base64Data = await new Promise<string>((resolve) => {
-          reader.onload = () => resolve((reader.result as string).split(',')[1]);
-          reader.readAsDataURL(fileData.previewFile!);
-        });
-        mimeType = fileData.previewFile.type;
+        const optimized = await getOptimizedImageBase64(fileData.previewFile);
+        base64Data = optimized.data;
+        mimeType = optimized.mimeType;
       } else if (fileData.type === 'video') {
         if (!fileData.preview) {
           throw new Error('Could not generate video thumbnail.');
@@ -904,12 +954,9 @@ function AppContent() {
         base64Data = fileData.preview.split(',')[1];
         mimeType = 'image/jpeg';
       } else {
-        const reader = new FileReader();
-        base64Data = await new Promise<string>((resolve) => {
-          reader.onload = () => resolve((reader.result as string).split(',')[1]);
-          reader.readAsDataURL(fileData.file);
-        });
-        mimeType = fileData.file.type;
+        const optimized = await getOptimizedImageBase64(fileData.file);
+        base64Data = optimized.data;
+        mimeType = optimized.mimeType;
       }
 
       let prompt = '';
