@@ -910,7 +910,7 @@ function AppContent() {
     setShowSettings(false);
   };
 
-  const generateMetadata = async (fileId: string) => {
+  const generateMetadata = async (fileId: string, retryCount = 0) => {
     if (!apiKey) {
       setShowSettings(true);
       return;
@@ -1037,10 +1037,18 @@ function AppContent() {
       let errorMessage = 'Failed to generate metadata';
       const errorStr = error?.message || String(error);
 
+      // Handle Quota/Rate Limit with Retry
+      if ((errorStr.includes('429') || errorStr.toLowerCase().includes('quota') || errorStr.includes('RESOURCE_EXHAUSTED')) && retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 2000; // Exponential backoff: 2s, 4s, 8s
+        console.log(`Rate limit hit. Retrying in ${delay}ms... (Attempt ${retryCount + 1})`);
+        setTimeout(() => generateMetadata(fileId, retryCount + 1), delay);
+        return;
+      }
+
       if (errorStr.includes('API_KEY_INVALID') || errorStr.includes('401') || errorStr.includes('403')) {
         errorMessage = 'Invalid API Key. Please check your AI Configuration settings.';
-      } else if (errorStr.includes('429') || errorStr.toLowerCase().includes('quota')) {
-        errorMessage = 'Rate limit exceeded or quota exhausted. Please wait a moment.';
+      } else if (errorStr.includes('429') || errorStr.toLowerCase().includes('quota') || errorStr.includes('RESOURCE_EXHAUSTED')) {
+        errorMessage = 'Rate limit exceeded or quota exhausted. If you are using a free tier, please wait a moment or check your Google AI Studio billing details.';
       } else if (errorStr.includes('fetch') || errorStr.toLowerCase().includes('network') || errorStr.includes('Rpc failed') || errorStr.includes('xhr error')) {
         errorMessage = 'Network error: Failed to reach Gemini API. This might be due to a proxy, firewall, or temporary service issue.';
       } else if (errorStr.includes('500') || errorStr.includes('503')) {
@@ -1067,11 +1075,16 @@ function AppContent() {
     setIsGeneratingAll(true);
     const idleFiles = files.filter(f => f.status !== 'done');
     
-    // Process in batches of 5 to balance speed and rate limits
-    const batchSize = 5;
+    // Process in batches of 3 to stay within free tier RPM limits
+    const batchSize = 3;
     for (let i = 0; i < idleFiles.length; i += batchSize) {
       const batch = idleFiles.slice(i, i + batchSize);
       await Promise.all(batch.map(file => generateMetadata(file.id)));
+      
+      // Add a small delay between batches to avoid hitting RPM limits
+      if (i + batchSize < idleFiles.length) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
     }
     
     setIsGeneratingAll(false);
@@ -2155,9 +2168,9 @@ function AppContent() {
                     onChange={(e) => setSelectedModel(e.target.value)}
                     className={`w-full p-4 rounded-2xl outline-none border transition-all focus:ring-2 focus:ring-indigo-500/50 ${isDarkMode ? 'bg-black/40 border-white/10 text-white' : 'bg-gray-50 border-black/10 text-gray-900'}`}
                   >
-                    <option value="gemini-3-flash-preview">Gemini 3 Flash (Fastest)</option>
+                    <option value="gemini-3-flash-preview">Gemini 3 Flash (Fastest & High Quality)</option>
                     <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Most Accurate)</option>
-                    <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite</option>
+                    <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite (Highest Quota)</option>
                   </select>
                 </div>
                 
