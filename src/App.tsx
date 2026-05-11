@@ -962,15 +962,27 @@ function AppContent() {
       let prompt = '';
       if (appMode === 'META') {
         const typeLabel = fileData.type === 'video' ? 'video' : 'image/vector';
-        prompt = `Analyze this ${typeLabel} and provide optimized microstock metadata for ${targetPlatform}. 
-        Return ONLY a JSON object with four fields: 
-        'title' (strictly limited to ${titleLength} characters, descriptive and keyword-rich),
-        'description' (strictly limited to ${descriptionLength} characters, detailed and natural),
-        'keywords' (a comma-separated string of exactly ${tagsCount} highly relevant, high-traffic microstock keywords),
-        'category' (one of the following: ${MICROSTOCK_CATEGORIES.join(', ')}).
-        ${singleWordTags ? "Ensure keywords are mostly single words." : ""}
+        prompt = `You are a world-class Microstock SEO Expert. Analyze this ${typeLabel} and provide ultra-optimized metadata to maximize search visibility and sales on ${targetPlatform}.
+
+        CRITICAL SEO RULES:
+        1. TITLE: Front-load the most relevant keywords. NO filler words at the start (no "A", "An", "The"). Use literal, descriptive language. Example: "Young woman working on laptop in modern home office" is better than "Productivity at home". Max ${titleLength} chars.
+        2. DESCRIPTION: Write a detailed, natural description (max ${descriptionLength} chars). Include secondary details like lighting, mood, color, and specific actions.
+        3. KEYWORDS: Provide exactly ${tagsCount} keywords as a comma-separated string. 
+           - ORDER MATTERS: Put the most important keywords first.
+           - Include: Literal objects, people, actions, location, technical style (e.g., "bokeh", "flat lay"), and 3-5 conceptual/mood words (e.g., "success", "future").
+           - ${singleWordTags ? "Priority: Single words." : "Use a mix of single words and descriptive phrases."}
+        4. CATEGORY: Exactly one from: ${MICROSTOCK_CATEGORIES.join(', ')}.
+
+        Return ONLY a JSON object:
+        {
+          "title": "...",
+          "description": "...",
+          "keywords": "...",
+          "category": "..."
+        }
+        
         Content Type: ${imageType}.
-        Do not include any other text or explanation.`;
+        Do not include any other text.`;
       } else {
         prompt = `Analyze this image and generate a highly detailed, professional prompt for an AI image generator (like Midjourney, DALL-E, or Stable Diffusion) that would recreate this scene, subject, and artistic style. 
         The prompt should include details about lighting, composition, camera settings (if applicable), and artistic medium.
